@@ -1,0 +1,1317 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>School Academic Management</title>
+
+<style>
+:root {
+  font-family: Inter, system-ui, Arial, sans-serif;
+  color: #1b2c45;
+  background: #f2f5fa;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+header {
+  background: #122b55;
+  color: white;
+  padding: 20px max(20px, calc((100vw - 1100px)/2));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+header strong { font-size: 20px; }
+header small { color: #c7d7f2; }
+nav { display: flex; gap: 8px; }
+button, select, input { font: inherit; }
+button { cursor: pointer; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+nav button {
+  border: 1px solid #597397;
+  background: #284673;
+  color: white;
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-weight: 700;
+}
+nav button.active { background: white; color: #122b55; }
+main { max-width: 1100px; margin: 32px auto; padding: 0 18px; }
+h1 { font-size: clamp(25px, 4vw, 34px); margin: 8px 0; }
+h2 { font-size: 21px; margin-top: 24px; }
+h3 { font-size: 17px; }
+p { color: #64748b; line-height: 1.6; }
+.eyebrow {
+  color: #486b9f;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  font-size: 12px;
+  font-weight: 800;
+}
+.card {
+  background: white;
+  border: 1px solid #e1e8f2;
+  border-radius: 17px;
+  padding: 24px;
+  margin: 18px 0;
+  box-shadow: 0 10px 30px #20385b0a;
+}
+.hidden { display: none !important; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+select, input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccd5e3;
+  border-radius: 10px;
+  background: white;
+  color: #1b2c45;
+}
+.primary, .secondary {
+  border: 0;
+  border-radius: 10px;
+  padding: 12px 19px;
+  font-weight: 700;
+}
+.primary { background: #265dc5; color: white; }
+.secondary { background: #edf2fa; color: #31527d; }
+.actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 22px;
+}
+.toolbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: end;
+  margin: 16px 0;
+}
+.toolbar > div { flex: 1 1 145px; }
+.toolbar > button { flex: 0 0 auto; }
+.subjects {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+.subject {
+  border: 1px solid #d7e0ed;
+  border-radius: 11px;
+  background: white;
+  color: #304563;
+  padding: 15px;
+  text-align: left;
+  font-weight: 700;
+}
+.subject.selected { background: #eaf1ff; border-color: #3469d5; }
+.subject small { display: block; margin-top: 6px; font-weight: 400; }
+.message {
+  background: #eef5ff;
+  color: #2452a0;
+  padding: 13px;
+  border-radius: 10px;
+  margin: 14px 0;
+}
+.error { background: #fff1f1; color: #a32734; }
+.success { background: #eaf8ef; color: #176d37; }
+.muted { color: #64748b; font-size: 13px; }
+.tablewrap { overflow-x: auto; margin: 18px 0; }
+table { width: 100%; border-collapse: collapse; min-width: 520px; }
+th, td { text-align: left; padding: 12px; border-bottom: 1px solid #e5eaf1; }
+th { background: #f5f8fc; font-size: 12px; }
+td input[type="number"] { max-width: 120px; }
+.absent-label { display: inline-flex; align-items: center; gap: 8px; margin: 0; cursor: pointer; white-space: nowrap; }
+.absent-checkbox { width: 18px; height: 18px; margin: 0; accent-color: #265dc5; cursor: pointer; }
+tr.absent-row { background: #fff8e8; }
+tr.absent-row input[type="number"] { background: #edf0f4; color: #64748b; }
+
+.menu {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+  margin: 24px 0;
+}
+.menu-card {
+  border: 1px solid #dce5f2;
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  min-height: 195px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  color: #1b2c45;
+}
+.menu-card:hover { border-color: #3269cf; background: #f8faff; }
+.menu-card strong { font-size: 18px; }
+.menu-card span { color: #64748b; line-height: 1.5; }
+.menu-card b { color: #245fc7; margin-top: auto; }
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+}
+.stat {
+  background: #edf3fd;
+  padding: 16px;
+  border-radius: 12px;
+}
+.stat span { display: block; color: #64748b; font-size: 13px; }
+.stat strong { display: block; font-size: 25px; margin-top: 6px; }
+.progress {
+  height: 11px;
+  background: #e2eaf4;
+  border-radius: 99px;
+  overflow: hidden;
+  margin: 14px 0;
+}
+.progress div { height: 100%; background: #2b65c8; width: 0; }
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+}
+.status-item {
+  border: 1px solid #e0e7f0;
+  border-radius: 11px;
+  padding: 13px;
+}
+.status-item strong, .status-item small { display: block; }
+.status-item small { margin-top: 6px; color: #64748b; }
+.status-item em {
+  display: inline-block;
+  margin-top: 9px;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+}
+.completed { color: #167347; }
+.partial { color: #956000; }
+.pending { color: #64748b; }
+.bars { display: grid; gap: 12px; margin: 20px 0; }
+.bar-row {
+  display: grid;
+  grid-template-columns: 125px 1fr 60px;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+}
+.bar-track { height: 14px; background: #e3eaf4; border-radius: 8px; overflow: hidden; }
+.bar-fill { height: 100%; background: #3269cf; }
+.chart {
+  border: 1px solid #e1e8f2;
+  border-radius: 13px;
+  padding: 14px;
+  margin: 16px 0;
+  overflow-x: auto;
+}
+.chart svg { width: 100%; height: auto; max-height: 300px; display: block; }
+.back { margin-bottom: 18px; }
+.report-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+}
+.report-tile {
+  background: #f5f8fd;
+  border: 1px solid #dce5f2;
+  padding: 16px;
+  border-radius: 12px;
+}
+.report-tile strong { display: block; font-size: 23px; margin: 8px 0; }
+.report-tile small { display: block; color: #64748b; }
+#mode {
+  background: #e7f5ed;
+  color: #167347;
+  padding: 7px 12px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 800;
+}
+@media(max-width:650px) {
+  .grid, .report-summary { grid-template-columns: 1fr; }
+  .card { padding: 17px; }
+  nav { width: 100%; }
+  nav button { flex: 1; }
+  .bar-row { grid-template-columns: 90px 1fr 45px; }
+}
+@media print {
+  header, nav, .back, .toolbar, .print-hide,
+  #teacherView, #analysisMenu, #subjectView, #termView {
+    display: none !important;
+  }
+  #studentView, #reportContent { display: block !important; }
+  body { background: white; }
+  main { margin: 0; max-width: none; }
+  .card { box-shadow: none; border: 0; }
+}
+</style>
+</head>
+
+<body>
+<header>
+  <div>
+    <strong>School Academic Management</strong>
+    <br>
+    <small>Marks Entry &amp; Performance Analyzer</small>
+  </div>
+  <nav>
+    <button id="marksNav" class="active" type="button" onclick="showMarks()">Marks Entry</button>
+    <button id="analysisNav" type="button" onclick="showAnalysis()">Marks Analysis</button>
+  </nav>
+  <span id="mode">Connecting...</span>
+</header>
+
+<main>
+
+<!-- TEACHER MARKS ENTRY -->
+<section id="teacherView">
+  <div class="eyebrow">Teacher Portal</div>
+  <h1>Marks Entry</h1>
+  <p>Select a grade, year and term to enter student marks.</p>
+
+  <div class="card">
+    <section id="page1">
+      <h2>Select your class</h2>
+      <div class="grid">
+        <div><label>Grade</label><select id="grade"></select></div>
+        <div><label>Academic year</label><input id="year" type="number" value="2026" min="2020" max="2100"></div>
+        <div>
+          <label>Term</label>
+          <select id="term">
+            <option>Term 1</option>
+            <option>Term 2</option>
+            <option>Term 3</option>
+          </select>
+        </div>
+      </div>
+
+      <h3>Term submission progress</h3>
+      <button class="secondary" onclick="refreshSubmissionStatus()">Refresh status</button>
+      <p id="trackerMessage" class="muted">Connecting to Google Sheets...</p>
+      <div class="progress"><div id="trackerProgress"></div></div>
+      <div id="trackerList" class="status-grid"></div>
+
+      <div class="actions">
+        <span></span>
+        <button class="primary" onclick="go(2)">Next: Select subject →</button>
+      </div>
+    </section>
+
+    <section id="page2" class="hidden">
+      <h2>Select your subject</h2>
+      <p>Religion and Aesthetic subjects display enrolled students only.</p>
+      <div id="subjects" class="subjects"></div>
+      <p id="subjectHint" class="muted"></p>
+      <div class="actions">
+        <button class="secondary" onclick="go(1)">← Back</button>
+        <button class="primary" onclick="loadStudents()">Next: Enter marks →</button>
+      </div>
+    </section>
+
+    <section id="page3" class="hidden">
+      <h2 id="selection"></h2>
+      <p id="studentCount" class="muted"></p>
+      <div id="notice" class="message hidden"></div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Student ID</th><th>Student name</th><th>Marks / 100</th><th>Absent</th></tr></thead>
+          <tbody id="studentRows"></tbody>
+        </table>
+      </div>
+      <div class="actions">
+        <button class="secondary" onclick="go(2)">← Back</button>
+        <button class="primary" id="submitButton" onclick="submitMarks()">Submit marks</button>
+      </div>
+    </section>
+  </div>
+</section>
+
+<!-- ANALYSIS MENU -->
+<section id="analysisMenu" class="hidden">
+  <div class="eyebrow">Administrator workspace</div>
+  <h1>Marks Analysis</h1>
+  <p>Select the report you want to view. Results come from saved Google Sheets marks.</p>
+
+  <div class="menu">
+    <button class="menu-card" onclick="openAnalysisSection('subject')">
+      <strong>▥ Subject-wise Analysis</strong>
+      <span>Class averages, student results, subject performance and marks submission tracker.</span>
+      <b>Open dashboard →</b>
+    </button>
+    <button class="menu-card" onclick="openAnalysisSection('term')">
+      <strong>↗ Term-wise Comparison Graphs</strong>
+      <span>Compare academic performance across Terms 1, 2 and 3.</span>
+      <b>View comparison →</b>
+    </button>
+    <button class="menu-card" onclick="openAnalysisSection('student')">
+      <strong>▤ Student Performance Reports</strong>
+      <span>Individual student marks, averages, progress chart and printable reports.</span>
+      <b>View reports →</b>
+    </button>
+  </div>
+</section>
+
+<!-- SUBJECT ANALYSIS -->
+<section id="subjectView" class="hidden">
+  <button class="secondary back" onclick="showAnalysis()">← All analysis options</button>
+  <div class="eyebrow">Academic Performance Analyzer</div>
+  <h1>Subject-wise Analysis</h1>
+
+  <div class="card">
+    <div class="toolbar">
+      <div><label>Grade</label><select id="analysisGrade"></select></div>
+      <div><label>Year</label><input id="analysisYear" type="number" value="2026"></div>
+      <div>
+        <label>Term</label>
+        <select id="analysisTerm">
+          <option>Term 1</option><option>Term 2</option><option>Term 3</option>
+        </select>
+      </div>
+      <button class="primary" onclick="loadAnalysis()">Refresh Analysis</button>
+    </div>
+
+    <p id="analysisMessage" class="muted">Select filters to load analysis.</p>
+    <div id="analysisStats" class="stats"></div>
+
+    <h2>Marks Submission Overview</h2>
+    <p id="submissionMessage" class="muted"></p>
+    <div class="progress"><div id="submissionProgress"></div></div>
+    <div id="submissionSubjects" class="status-grid"></div>
+
+    <h2>Subject Averages</h2>
+    <div id="analysisBars" class="bars"></div>
+
+    <h2>Student Results</h2>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Name</th><th>Entered</th>
+            <th>Recorded Total</th><th>Final Average</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="analysisRows"></tbody>
+      </table>
+    </div>
+    <p id="analysisWarnings" class="muted"></p>
+  </div>
+</section>
+
+<!-- TERM COMPARISON -->
+<section id="termView" class="hidden">
+  <button class="secondary back" onclick="showAnalysis()">← All analysis options</button>
+  <div class="eyebrow">Academic Performance Analyzer</div>
+  <h1>Term-wise Comparison Graphs</h1>
+  <p>Missing marks are not treated as zero.</p>
+
+  <div class="card">
+    <div class="toolbar">
+      <div><label>Grade</label><select id="termGrade"></select></div>
+      <div><label>Academic year</label><input id="termYear" type="number" value="2026"></div>
+      <button class="primary" onclick="loadTermComparison()">Refresh Comparison</button>
+    </div>
+
+    <p id="termMessage" class="muted"></p>
+    <div id="termSummary" class="stats"></div>
+    <h2>Overall Class Average by Term</h2>
+    <div id="termChart" class="chart"></div>
+    <h2>Subject-wise Term Comparison</h2>
+    <div id="termTable" class="tablewrap"></div>
+    <p id="termNote" class="muted"></p>
+  </div>
+</section>
+
+<!-- STUDENT REPORTS -->
+<section id="studentView" class="hidden">
+  <button class="secondary back" onclick="showAnalysis()">← All analysis options</button>
+  <div class="eyebrow">Academic Performance Analyzer</div>
+  <h1>Student Performance Reports</h1>
+  <p>View each student's academic progress across three terms.</p>
+
+  <div class="card">
+    <div class="toolbar">
+      <div><label>Grade</label><select id="reportGrade"></select></div>
+      <div><label>Academic year</label><input id="reportYear" type="number" value="2026"></div>
+      <div>
+        <label>Student</label>
+        <select id="reportStudent"><option value="">Select student</option></select>
+      </div>
+      <button class="primary" id="reportButton" onclick="loadStudentReport()">View Report</button>
+    </div>
+
+    <p id="reportMessage" class="muted">Select a student.</p>
+
+    <div id="reportContent" class="hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+        <div>
+          <h2 id="reportName"></h2>
+          <p id="reportMeta" class="muted"></p>
+        </div>
+        <button class="secondary print-hide" onclick="window.print()">Print Report</button>
+      </div>
+
+      <div id="reportSummary" class="report-summary"></div>
+      <h3>Average Marks by Term</h3>
+      <div id="reportChart" class="chart"></div>
+      <h3>Subject Marks by Term</h3>
+      <div id="reportTable" class="tablewrap"></div>
+      <p id="reportNotes" class="muted"></p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+"use strict";
+
+/* ========== GENERAL HELPERS ========== */
+
+const el = id => document.getElementById(id);
+const live = typeof google !== "undefined" &&
+             google.script && google.script.run;
+
+let subjects = [];
+let subject = "";
+let students = [];
+let submissionStatus = null;
+let trackerRequest = 0;
+let dashboardRequest = 0;
+let termRequest = 0;
+let studentListRequest = 0;
+let studentReportRequest = 0;
+
+function node(tag, text, className) {
+  const n = document.createElement(tag);
+  if (text !== undefined) n.textContent = String(text);
+  if (className) n.className = className;
+  return n;
+}
+
+function message(id, text, error = false) {
+  const n = el(id);
+  n.textContent = text;
+  n.className = error ? "message error" : "muted";
+}
+
+function showOnly(id) {
+  ["teacherView", "analysisMenu", "subjectView", "termView", "studentView"]
+    .forEach(name => el(name).classList.toggle("hidden", name !== id));
+
+  el("marksNav").classList.toggle("active", id === "teacherView");
+  el("analysisNav").classList.toggle("active", id !== "teacherView");
+}
+
+function showMarks() { showOnly("teacherView"); }
+function showAnalysis() { showOnly("analysisMenu"); }
+
+function copyGrades(targetId) {
+  const target = el(targetId);
+  target.replaceChildren(
+    ...Array.from(el("grade").options, o => o.cloneNode(true))
+  );
+  target.value = el("grade").value;
+}
+
+function openAnalysisSection(section) {
+  if (section === "subject") {
+    showOnly("subjectView");
+    copyGrades("analysisGrade");
+    el("analysisYear").value = el("year").value;
+    el("analysisTerm").value = el("term").value;
+    loadAnalysis();
+  } else if (section === "term") {
+    showOnly("termView");
+    copyGrades("termGrade");
+    el("termYear").value = el("year").value;
+    loadTermComparison();
+  } else if (section === "student") {
+    showOnly("studentView");
+    copyGrades("reportGrade");
+    el("reportYear").value = el("year").value;
+    loadReportStudents();
+  }
+}
+
+/* ========== INITIAL CONNECTION ========== */
+
+function init() {
+  if (!live) {
+    el("mode").textContent = "Apps Script required";
+    message("trackerMessage", "Open this website through Google Apps Script.", true);
+    return;
+  }
+
+  google.script.run
+    .withSuccessHandler(data => {
+      el("grade").replaceChildren();
+
+      for (const grade of data.grades || []) {
+        el("grade").add(new Option(grade, grade));
+      }
+
+      subjects = data.subjects || [];
+      subject = subjects[0] || "";
+
+      el("mode").textContent = "Google Sheets connected";
+      renderSubjects();
+      refreshSubmissionStatus();
+    })
+    .withFailureHandler(err => {
+      el("mode").textContent = "Connection error";
+      message("trackerMessage", err.message, true);
+    })
+    .getSetup();
+}
+
+/* ========== TEACHER MARKS ENTRY ========== */
+
+function go(page) {
+  if (page === 2 && !el("grade").value) {
+    alert("Please wait for grades to load.");
+    return;
+  }
+
+  for (let i = 1; i <= 3; i++) {
+    el("page" + i).classList.toggle("hidden", i !== page);
+  }
+
+  if (page === 2) refreshSubmissionStatus();
+}
+
+function renderSubjects() {
+  const host = el("subjects");
+  host.replaceChildren();
+
+  for (const name of subjects) {
+    const button = node("button", name, "subject");
+    button.type = "button";
+    if (name === subject) button.classList.add("selected");
+
+    const status = submissionStatus?.subjects?.find(s => s.subject === name);
+    if (status) {
+      button.append(node("small", status.entered + "/" + status.expected + " recorded"));
+    }
+
+    button.onclick = () => {
+      subject = name;
+      renderSubjects();
+    };
+
+    host.append(button);
+  }
+
+  el("subjectHint").textContent = subject
+    ? "Selected subject: " + subject
+    : "Select a subject.";
+}
+
+function refreshSubmissionStatus() {
+  const request = ++trackerRequest;
+  const grade = el("grade").value;
+  const year = el("year").value;
+  const term = el("term").value;
+
+  if (!live || !grade) return;
+
+  message("trackerMessage", "Checking saved marks...");
+
+  google.script.run
+    .withSuccessHandler(data => {
+      if (request !== trackerRequest) return;
+
+      submissionStatus = data;
+      const total = data.required || 0;
+      const done = data.completed || 0;
+
+      message("trackerMessage",
+        done + " of " + total + " subject options completed.");
+
+      el("trackerProgress").style.width =
+        (total ? 100 * done / total : 0) + "%";
+
+      const host = el("trackerList");
+      host.replaceChildren();
+
+      for (const s of data.subjects || []) {
+        const item = node("div", undefined, "status-item");
+        item.append(
+          node("strong", s.subject),
+          node("small", s.entered + " / " + s.expected + " marks recorded"),
+          node("em", s.status, s.status)
+        );
+        host.append(item);
+      }
+
+      renderSubjects();
+    })
+    .withFailureHandler(err => {
+      if (request !== trackerRequest) return;
+      message("trackerMessage", err.message, true);
+    })
+    .getSubmissionStatus(year, grade, term);
+}
+
+function loadStudents() {
+  if (!subject) {
+    alert("Select a subject first.");
+    return;
+  }
+
+  const grade = el("grade").value;
+  const year = el("year").value;
+  const term = el("term").value;
+
+  message("notice", "Checking existing marks...");
+
+  google.script.run
+    .withSuccessHandler(status => {
+      submissionStatus = status;
+      renderSubjects();
+
+      const selected = status.subjects.find(s => s.subject === subject);
+      if (!selected) {
+        alert("No enrolled students for this subject.");
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler(list => {
+          const missingIds = Array.isArray(selected.missingIds)
+            ? new Set(selected.missingIds.map(String))
+            : null;
+
+          students = list.filter(s =>
+            missingIds ? missingIds.has(String(s.id)) : selected.entered === 0
+          );
+
+          el("selection").textContent =
+            grade + " · " + subject + " · " + term;
+
+          el("studentCount").textContent =
+            students.length + " student(s) awaiting marks";
+
+          const host = el("studentRows");
+          host.replaceChildren();
+
+          for (const s of students) {
+            const tr = document.createElement("tr");
+            const input = document.createElement("input");
+            input.type = "number";
+            input.min = "0";
+            input.max = "100";
+            input.step = "any";
+            input.dataset.id = s.id;
+
+            tr.append(
+              node("td", s.id),
+              node("td", s.name)
+            );
+
+            // Marks input cell
+            const td = document.createElement("td");
+            td.append(input);
+            tr.append(td);
+
+            // Absent checkbox cell
+            const absentTd = document.createElement("td");
+
+            const absentCheckbox = document.createElement("input");
+            absentCheckbox.type = "checkbox";
+            absentCheckbox.className = "absent-checkbox";
+            absentCheckbox.dataset.id = s.id;
+
+            // Disable marks input when student is absent
+            absentCheckbox.addEventListener("change", () => {
+              if (absentCheckbox.checked) {
+                input.value = "";
+                input.disabled = true;
+              } else {
+                input.disabled = false;
+              }
+              tr.classList.toggle("absent-row", absentCheckbox.checked);
+            });
+
+            const absentLabel = document.createElement("label");
+            absentLabel.className = "absent-label";
+            absentLabel.append(absentCheckbox, " Absent");
+
+            absentTd.append(absentLabel);
+            tr.append(absentTd);
+
+            host.append(tr);
+          }
+
+          el("submitButton").disabled = students.length === 0;
+          el("notice").classList.add("hidden");
+          go(3);
+        })
+        .withFailureHandler(err => alert(err.message))
+        .getStudents(grade, subject);
+    })
+    .withFailureHandler(err => alert(err.message))
+    .getSubmissionStatus(year, grade, term);
+}
+
+function submitMarks() {
+  // Read one row at a time: each row has a marks input and an Absent checkbox.
+  const marks = Array.from(el("studentRows").querySelectorAll("tr"))
+    .map(row => {
+      const input = row.querySelector('input[type="number"]');
+      const absent = row.querySelector('input.absent-checkbox');
+      if (!input || !absent) return null;
+      return {
+        id: input.dataset.id,
+        mark: absent.checked ? "ABSENT" : input.value.trim()
+      };
+    })
+    .filter(Boolean);
+
+  // Empty entries are left pending; ABSENT counts as an entered result.
+  const entered = marks.filter(m => m.mark !== "");
+
+  if (!entered.length) {
+    message("notice", "Enter at least one mark or select Absent.", true);
+    return;
+  }
+
+  if (entered.some(m => m.mark !== "ABSENT" &&
+      (!Number.isFinite(Number(m.mark)) ||
+       Number(m.mark) < 0 || Number(m.mark) > 100))) {
+    message("notice", "Marks must be between 0 and 100.", true);
+    return;
+  }
+
+  const absentCount = entered.filter(m => m.mark === "ABSENT").length;
+  const scoredCount = entered.length - absentCount;
+  if (!confirm("Submit " + entered.length + " result(s)?\n" +
+      scoredCount + " numeric mark(s), " + absentCount + " absent.")) return;
+
+  const button = el("submitButton");
+  button.disabled = true;
+
+  google.script.run
+    .withSuccessHandler(result => {
+      message("notice", result.added + " results saved successfully.");
+      el("notice").className = "message success";
+      button.disabled = false;
+      refreshSubmissionStatus();
+      loadStudents();
+    })
+    .withFailureHandler(err => {
+      message("notice", "Save failed: " + err.message, true);
+      button.disabled = false;
+    })
+    .saveMarks({
+      year: el("year").value,
+      grade: el("grade").value,
+      term: el("term").value,
+      subject,
+      marks: entered
+    });
+}
+
+/* ========== SUBJECT ANALYSIS ========== */
+
+function loadAnalysis() {
+  const request = ++dashboardRequest;
+
+  message("analysisMessage", "Loading dashboard...");
+  message("submissionMessage", "Loading submission status...");
+
+  google.script.run
+    .withSuccessHandler(data => {
+      if (request !== dashboardRequest) return;
+
+      try {
+        renderAnalysis(data.analysis);
+        renderSubmission(data.submission);
+      } catch (err) {
+        message("analysisMessage", "Display error: " + err.message, true);
+        console.error(err);
+      }
+    })
+    .withFailureHandler(err => {
+      if (request !== dashboardRequest) return;
+      message("analysisMessage", "Unable to load: " + err.message, true);
+      message("submissionMessage", "Request failed.", true);
+    })
+    .getDashboardData(
+      el("analysisYear").value,
+      el("analysisGrade").value,
+      el("analysisTerm").value
+    );
+}
+
+function renderAnalysis(d) {
+  message("analysisMessage", d.grade + " · " + d.term + " · " + d.year);
+
+  const stats = el("analysisStats");
+  stats.replaceChildren();
+
+  const values = [
+    ["Students", d.studentCount],
+    ["Complete results", d.completeCount],
+    ["Pending results", d.pendingCount],
+    ["Class average", d.classAverage ?? "—"]
+  ];
+
+  for (const [label, value] of values) {
+    const tile = node("div", undefined, "stat");
+    tile.append(node("span", label), node("strong", value));
+    stats.append(tile);
+  }
+
+  const bars = el("analysisBars");
+  bars.replaceChildren();
+
+  for (const s of d.subjects || []) {
+    const row = node("div", undefined, "bar-row");
+    const track = node("div", undefined, "bar-track");
+    const fill = node("div", undefined, "bar-fill");
+
+    fill.style.width = Math.max(0, Math.min(100, s.average ?? 0)) + "%";
+    track.append(fill);
+
+    row.append(
+      node("span", s.subject),
+      track,
+      node("strong", s.average ?? "—")
+    );
+
+    bars.append(row);
+  }
+
+  const rows = el("analysisRows");
+  rows.replaceChildren();
+
+  for (const s of d.students || []) {
+    const tr = document.createElement("tr");
+
+    for (const value of [
+      s.id, s.name, s.entered + "/" + s.expected,
+      s.totalRecorded, s.average ?? "—",
+      s.complete ? "Complete" : "Incomplete"
+    ]) {
+      tr.append(node("td", value));
+    }
+
+    rows.append(tr);
+  }
+
+  const warnings = d.warnings || {};
+  el("analysisWarnings").textContent =
+    "Duplicates: " + (warnings.duplicates || []).length +
+    " · Invalid/unmatched: " + (warnings.invalidOrUnmatched || []).length +
+    ". " + (d.note || "");
+}
+
+function renderSubmission(data) {
+  const active = data.subjects || [];
+  const expected = active.reduce((n, s) => n + s.expected, 0);
+  const entered = active.reduce((n, s) => n + s.entered, 0);
+
+  message("submissionMessage",
+    entered + " of " + expected + " expected marks recorded.");
+
+  el("submissionProgress").style.width =
+    (expected ? 100 * entered / expected : 0) + "%";
+
+  const host = el("submissionSubjects");
+  host.replaceChildren();
+
+  for (const s of active) {
+    const item = node("div", undefined, "status-item");
+    item.append(
+      node("strong", s.subject),
+      node("small", s.entered + "/" + s.expected + " marks"),
+      node("em", s.status, s.status)
+    );
+    host.append(item);
+  }
+}
+
+/* ========== TERM COMPARISON ========== */
+
+function loadTermComparison() {
+  const request = ++termRequest;
+  message("termMessage", "Loading term comparison...");
+
+  google.script.run
+    .withSuccessHandler(data => {
+      if (request !== termRequest) return;
+      try {
+        renderTermComparison(data);
+      } catch (err) {
+        message("termMessage", "Display error: " + err.message, true);
+      }
+    })
+    .withFailureHandler(err => {
+      if (request !== termRequest) return;
+      message("termMessage", err.message, true);
+    })
+    .getTermComparison(el("termYear").value, el("termGrade").value);
+}
+
+function renderTermComparison(data) {
+  message("termMessage",
+    data.grade + " · " + data.year + " · " +
+    data.studentCount + " registered students");
+
+  const summary = el("termSummary");
+  summary.replaceChildren();
+
+  for (const t of data.terms) {
+    const tile = node("div", undefined, "stat");
+    tile.append(
+      node("span", t.term),
+      node("strong", t.entered + "/" + t.expected),
+      node("span", t.missing + " missing marks")
+    );
+    summary.append(tile);
+  }
+
+  drawAverageChart(
+    "termChart",
+    data.terms.map(t => ({
+      term: t.term,
+      average: t.classAverage
+    }))
+  );
+
+  const table = document.createElement("table");
+  const header = document.createElement("tr");
+
+  for (const label of ["Subject", "Term 1", "Term 2", "Term 3"]) {
+    header.append(node("th", label));
+  }
+
+  const thead = document.createElement("thead");
+  thead.append(header);
+  table.append(thead);
+
+  const tbody = document.createElement("tbody");
+
+  for (const s of data.subjects || []) {
+    const tr = document.createElement("tr");
+    tr.append(node("td", s.subject));
+
+    for (const t of s.terms) {
+      const td = document.createElement("td");
+      td.append(node("strong", t.average === null ? "—" :
+        Number(t.average).toFixed(2)));
+      td.append(node("small",
+        " " + t.entered + "/" + t.expected +
+        (t.entered < t.expected ? " provisional" : "")
+      ));
+      tr.append(td);
+    }
+
+    tbody.append(tr);
+  }
+
+  table.append(tbody);
+  el("termTable").replaceChildren(table);
+  el("termNote").textContent = data.note || "";
+}
+
+/* ========== STUDENT REPORTS ========== */
+
+function loadReportStudents() {
+  const request = ++studentListRequest;
+  ++studentReportRequest;
+  el("reportContent").classList.add("hidden");
+  el("reportStudent").replaceChildren(new Option("Select student", ""));
+  message("reportMessage", "Loading student list...");
+
+  google.script.run
+    .withSuccessHandler(list => {
+      if (request !== studentListRequest) return;
+
+      for (const s of list) {
+        el("reportStudent").add(
+          new Option(s.name + " (" + s.id + ")", s.id)
+        );
+      }
+
+      message("reportMessage", list.length
+        ? "Select a student to view the report."
+        : "No students found.");
+    })
+    .withFailureHandler(err => {
+      if (request !== studentListRequest) return;
+      message("reportMessage", err.message, true);
+    })
+    .getReportStudents(el("reportGrade").value);
+}
+
+function loadStudentReport() {
+  const id = el("reportStudent").value;
+
+  if (!id) {
+    message("reportMessage", "Please select a student.", true);
+    return;
+  }
+
+  const request = ++studentReportRequest;
+  const button = el("reportButton");
+  button.disabled = true;
+  message("reportMessage", "Loading student report...");
+
+  google.script.run
+    .withSuccessHandler(data => {
+      if (request !== studentReportRequest) return;
+      button.disabled = false;
+
+      try {
+        renderStudentReport(data);
+      } catch (err) {
+        message("reportMessage", "Display error: " + err.message, true);
+      }
+    })
+    .withFailureHandler(err => {
+      if (request !== studentReportRequest) return;
+      button.disabled = false;
+      message("reportMessage", err.message, true);
+    })
+    .getStudentReport(
+      el("reportYear").value,
+      el("reportGrade").value,
+      id
+    );
+}
+
+function renderStudentReport(data) {
+  message("reportMessage", "Report loaded.");
+  el("reportContent").classList.remove("hidden");
+
+  el("reportName").textContent = data.student.name;
+  el("reportMeta").textContent =
+    data.student.id + " · " + data.grade + " · " + data.year;
+
+  const summary = el("reportSummary");
+  summary.replaceChildren();
+
+  for (const t of data.terms) {
+    const tile = node("div", undefined, "report-tile");
+
+    tile.append(
+      node("b", t.term),
+      node("strong",
+        t.average === null ? "—" : Number(t.average).toFixed(2) + " / 100"),
+      node("small", t.entered + "/" + t.expected + " subjects"),
+      node("small", t.complete ? "Complete" : "Incomplete"),
+      node("small", "Recorded total: " + t.totalRecorded)
+    );
+
+    summary.append(tile);
+  }
+
+  drawAverageChart(
+    "reportChart",
+    data.terms.map(t => ({
+      term: t.term,
+      average: t.complete ? t.average : null
+    }))
+  );
+
+  const table = document.createElement("table");
+  const thead = document.createElement("thead");
+  const header = document.createElement("tr");
+
+  for (const label of ["Subject", "Term 1", "Term 2", "Term 3"]) {
+    header.append(node("th", label));
+  }
+
+  thead.append(header);
+  table.append(thead);
+
+  const tbody = document.createElement("tbody");
+
+  for (const subjectName of data.subjects || []) {
+    const tr = document.createElement("tr");
+    tr.append(node("td", subjectName));
+
+    for (const term of data.terms) {
+      const entry = (term.marks || []).find(
+        m => m.subject === subjectName
+      );
+
+      const displayMark = !entry ||
+        entry.mark === null ||
+        entry.mark === undefined
+          ? "Pending"
+          : String(entry.mark).toUpperCase() === "ABSENT" ||
+            String(entry.mark).toUpperCase() === "AB"
+            ? "AB"
+            : entry.mark;
+
+      tr.append(node("td", displayMark));
+    }
+
+    tbody.append(tr);
+  }
+
+  table.append(tbody);
+  el("reportTable").replaceChildren(table);
+
+  el("reportNotes").textContent =
+    (data.note || "") +
+    (data.warnings?.length ? " Issues: " + data.warnings.join("; ") : "");
+}
+
+/* ========== REUSABLE AVERAGE CHART ========== */
+
+function drawAverageChart(hostId, terms) {
+  const host = el(hostId);
+  host.replaceChildren();
+
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox", "0 0 640 280");
+  svg.setAttribute("role", "img");
+
+  const values = [1, 2, 3].map(i => {
+    const t = terms.find(x => x.term === "Term " + i);
+    return t && t.average !== null &&
+      t.average !== undefined &&
+      Number.isFinite(Number(t.average))
+      ? Number(t.average)
+      : null;
+  });
+
+  svg.setAttribute("aria-label",
+    values.map((v, i) =>
+      "Term " + (i + 1) + ": " + (v === null ? "Pending" : v)
+    ).join(", ")
+  );
+
+  function draw(tag, attrs, text) {
+    const element = document.createElementNS(ns, tag);
+
+    for (const [key, value] of Object.entries(attrs)) {
+      element.setAttribute(key, String(value));
+    }
+
+    if (text !== undefined) element.textContent = text;
+    svg.append(element);
+    return element;
+  }
+
+  const left = 58, right = 610, top = 25, bottom = 230;
+  const x = i => left + i * (right - left) / 2;
+  const y = value => bottom - value / 100 * (bottom - top);
+
+  for (const tick of [0, 25, 50, 75, 100]) {
+    draw("line", {
+      x1: left, y1: y(tick),
+      x2: right, y2: y(tick),
+      stroke: "#e1e8f2"
+    });
+
+    draw("text", {
+      x: left - 12, y: y(tick) + 4,
+      "text-anchor": "end",
+      fill: "#64748b", "font-size": 12
+    }, tick);
+  }
+
+  for (let i = 0; i < 3; i++) {
+    draw("text", {
+      x: x(i), y: 258,
+      "text-anchor": "middle",
+      fill: "#40536c", "font-size": 13
+    }, "Term " + (i + 1));
+  }
+
+  for (let i = 0; i < 2; i++) {
+    if (values[i] !== null && values[i + 1] !== null) {
+      draw("line", {
+        x1: x(i), y1: y(values[i]),
+        x2: x(i + 1), y2: y(values[i + 1]),
+        stroke: "#2563c7",
+        "stroke-width": 3,
+        "stroke-linecap": "round"
+      });
+    }
+  }
+
+  values.forEach((value, i) => {
+    if (value === null) {
+      draw("text", {
+        x: x(i), y: bottom - 12,
+        "text-anchor": "middle",
+        fill: "#8795a9", "font-size": 12
+      }, "Pending");
+      return;
+    }
+
+    draw("circle", {
+      cx: x(i), cy: y(value), r: 6,
+      fill: "#2563c7", stroke: "white",
+      "stroke-width": 2
+    });
+
+    draw("text", {
+      x: x(i), y: y(value) < 45 ? y(value) + 24 : y(value) - 14,
+      "text-anchor": "middle",
+      fill: "#173d82",
+      "font-size": 14,
+      "font-weight": 700
+    }, value.toFixed(2));
+  });
+
+  host.append(svg);
+}
+
+/* ========== EVENTS ========== */
+
+["grade", "year", "term"].forEach(id => {
+  el(id).addEventListener("change", refreshSubmissionStatus);
+});
+
+["analysisGrade", "analysisYear", "analysisTerm"].forEach(id => {
+  el(id).addEventListener("change", loadAnalysis);
+});
+
+["termGrade", "termYear"].forEach(id => {
+  el(id).addEventListener("change", loadTermComparison);
+});
+
+el("reportGrade").addEventListener("change", loadReportStudents);
+
+el("reportStudent").addEventListener("change", () => {
+  if (el("reportStudent").value) loadStudentReport();
+  else el("reportContent").classList.add("hidden");
+});
+
+el("reportYear").addEventListener("change", () => {
+  if (el("reportStudent").value) loadStudentReport();
+});
+
+/* ========== START APPLICATION ========== */
+
+init();
+
+</script>
+</body>
+</html>
