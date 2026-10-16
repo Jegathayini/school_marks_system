@@ -3,14 +3,30 @@
  * SCHOOL ACADEMIC MANAGEMENT SYSTEM
  * File 3 of 7: Analysis.gs
  *
- * Calculates academic performance from Google Sheets.
+ * MULTI-REGISTER ACADEMIC ANALYSIS
  *
- * ABSENT RULE:
+ * Grades 06-09 -> Junior Register
+ * Grades 10-11 -> O/L Register
+ * Grades 12-13 -> A/L Register
+ *
+ * Uses the updated Code.gs functions.
+ *
+ * ABSENT RULES:
  * - ABSENT is a valid recorded result.
  * - ABSENT counts as entered.
  * - ABSENT contributes zero to averages.
- * - ABSENT is displayed as AB in student marks.
+ * - ABSENT is displayed as AB.
  * - Blank marks remain pending.
+ *
+ * A/L NOTE:
+ * Three main subjects, General English and GIT
+ * are tracked as separate enrolled subjects.
+ *
+ * This version preserves the existing general
+ * average calculation across all enrolled subjects.
+ * It does not calculate official A/L Z-scores,
+ * university admission eligibility, or stream-
+ * specific examination results.
  *
  * Dependencies from Code.gs:
  * book_(), readRegister_(), readStudents_(),
@@ -20,11 +36,25 @@
 
 /* ========== HELPER FUNCTIONS ========== */
 
+/**
+ * Round a number to two decimal places.
+ */
 function analysisRound_(value) {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
+  return Math.round(
+    (value + Number.EPSILON) * 100
+  ) / 100;
 }
 
-function analysisMarkKey_(year, grade, term, studentId, subject) {
+/**
+ * Create a unique key for a mark.
+ */
+function analysisMarkKey_(
+  year,
+  grade,
+  term,
+  studentId,
+  subject
+) {
   return [
     String(year),
     String(grade),
@@ -34,8 +64,16 @@ function analysisMarkKey_(year, grade, term, studentId, subject) {
   ].join('|');
 }
 
+/**
+ * Read stored marks from Marks_Entries.
+ *
+ * No marks are changed.
+ */
 function analysisReadMarks_() {
-  const sheet = book_().getSheetByName(MARKS_SHEET);
+
+  const sheet = book_().getSheetByName(
+    MARKS_SHEET
+  );
 
   if (!sheet || sheet.getLastRow() < 2) {
     return [];
@@ -54,10 +92,18 @@ function analysisReadMarks_() {
   ];
 
   const headers = sheet
-    .getRange(1, 1, 1, expectedHeaders.length)
+    .getRange(
+      1,
+      1,
+      1,
+      expectedHeaders.length
+    )
     .getDisplayValues()[0];
 
-  if (headers.join('|') !== expectedHeaders.join('|')) {
+  if (
+    headers.join('|') !==
+    expectedHeaders.join('|')
+  ) {
     throw new Error(
       'Unexpected Marks_Entries column structure. ' +
       'Please check the spreadsheet headers.'
@@ -74,54 +120,135 @@ function analysisReadMarks_() {
     .getValues();
 }
 
-function analysisStudentSubjects_(student, columns) {
-  return Object.keys(columns).filter(subject => {
-    return yes_(student.row[columns[subject]]);
-  });
+/**
+ * Get subjects enrolled by one student.
+ *
+ * The subject list comes from the correct
+ * register for the selected grade.
+ */
+function analysisStudentSubjects_(
+  student,
+  columns
+) {
+  return Object.keys(columns).filter(
+    subject => {
+      return yes_(
+        student.row[columns[subject]]
+      );
+    }
+  );
 }
 
 /* ========== MAIN ANALYSIS FUNCTION ========== */
 
+/**
+ * Calculate results for one academic context.
+ *
+ * Examples:
+ *
+ * getAnalysis(2026, 'Grade 06', 'Term 1')
+ * getAnalysis(2026, 'Grade 10', 'Term 2')
+ * getAnalysis(2026, 'Grade 12', 'Term 3')
+ */
 function getAnalysis(year, grade, term) {
 
-  const context = validateContext_(year, grade, term);
-  const register = readRegister_();
+  /* ========== VALIDATE CONTEXT ========== */
 
-  const registeredStudents = readStudents_(register.rows)
-    .filter(student => student.grade === context.grade);
+  const context = validateContext_(
+    year,
+    grade,
+    term
+  );
+
+  /*
+   * IMPORTANT MULTI-REGISTER CHANGE:
+   *
+   * Previously:
+   * const register = readRegister_();
+   *
+   * Now:
+   * Pass the selected grade so the correct
+   * register is opened automatically.
+   */
+  const register = readRegister_(
+    context.grade
+  );
+
+  /* ========== LOAD REGISTERED STUDENTS ========== */
+
+  const registeredStudents = readStudents_(
+    register.rows
+  ).filter(
+    student =>
+      student.grade === context.grade
+  );
+
+  /* ========== LOAD SAVED MARKS ========== */
 
   const savedMarks = analysisReadMarks_();
+
+  /* ========== STUDENT LOOKUP ========== */
 
   const studentMap = new Map();
 
   for (const student of registeredStudents) {
-    studentMap.set(student.id, student);
+    studentMap.set(
+      student.id,
+      student
+    );
   }
+
+  /* ========== SUBJECT ENROLLMENT ========== */
 
   const enrollmentMap = new Map();
 
   for (const student of registeredStudents) {
+
     enrollmentMap.set(
       student.id,
-      analysisStudentSubjects_(student, register.columns)
+      analysisStudentSubjects_(
+        student,
+        register.columns
+      )
     );
   }
 
+  /* ========== MARK VALIDATION ========== */
+
   const marksMap = new Map();
+
   const duplicateWarnings = [];
   const invalidWarnings = [];
 
-  /* ========== VALIDATE SAVED MARKS ========== */
+  /*
+   * Once a duplicate key is detected,
+   * that mark remains invalid.
+   */
+  const duplicateKeys = new Set();
 
-  for (let i = 0; i < savedMarks.length; i++) {
+  for (
+    let i = 0;
+    i < savedMarks.length;
+    i++
+  ) {
 
     const row = savedMarks[i];
     const sheetRow = i + 2;
 
     const rowYear = Number(row[0]);
-    const rowGrade = normalizeGrade_(row[1]);
-    const rowTerm = String(row[2] || '').trim();
 
+    const rowGrade = normalizeGrade_(
+      row[1]
+    );
+
+    const rowTerm = String(
+      row[2] || ''
+    ).trim();
+
+    /*
+     * Only analyze marks matching the
+     * selected year, grade and term.
+     */
     if (
       rowYear !== context.year ||
       rowGrade !== context.grade ||
@@ -130,27 +257,50 @@ function getAnalysis(year, grade, term) {
       continue;
     }
 
-    const studentId = String(row[3] || '').trim();
-    const subject = String(row[6] || '').trim();
+    const studentId = String(
+      row[3] || ''
+    ).trim();
+
+    const subject = String(
+      row[6] || ''
+    ).trim();
+
     const rawMark = row[7];
 
+    /* ========== STUDENT VALIDATION ========== */
+
     if (!studentMap.has(studentId)) {
+
       invalidWarnings.push(
-        'Row ' + sheetRow +
-        ': Student ' + studentId +
-        ' is not registered in ' + context.grade
+        'Row ' +
+        sheetRow +
+        ': Student ' +
+        studentId +
+        ' is not registered in ' +
+        context.grade
       );
+
       continue;
     }
 
-    const enrolledSubjects = enrollmentMap.get(studentId);
+    /* ========== ENROLLMENT VALIDATION ========== */
 
-    if (!enrolledSubjects.includes(subject)) {
+    const enrolledSubjects =
+      enrollmentMap.get(studentId);
+
+    if (
+      !enrolledSubjects.includes(subject)
+    ) {
+
       invalidWarnings.push(
-        'Row ' + sheetRow +
-        ': Student ' + studentId +
-        ' is not enrolled in ' + subject
+        'Row ' +
+        sheetRow +
+        ': Student ' +
+        studentId +
+        ' is not enrolled in ' +
+        subject
       );
+
       continue;
     }
 
@@ -167,7 +317,7 @@ function getAnalysis(year, grade, term) {
       markText.toUpperCase() === 'AB'
     ) {
 
-      // Store absence consistently.
+      // Normalize absence.
       mark = 'ABSENT';
 
     } else {
@@ -176,10 +326,14 @@ function getAnalysis(year, grade, term) {
         typeof rawMark === 'boolean' ||
         !/^\d+(?:\.\d+)?$/.test(markText)
       ) {
+
         invalidWarnings.push(
-          'Row ' + sheetRow +
-          ': Invalid mark for student ' + studentId
+          'Row ' +
+          sheetRow +
+          ': Invalid mark for student ' +
+          studentId
         );
+
         continue;
       }
 
@@ -190,13 +344,18 @@ function getAnalysis(year, grade, term) {
         mark < 0 ||
         mark > 100
       ) {
+
         invalidWarnings.push(
-          'Row ' + sheetRow +
+          'Row ' +
+          sheetRow +
           ': Mark must be between 0 and 100'
         );
+
         continue;
       }
     }
+
+    /* ========== UNIQUE MARK KEY ========== */
 
     const key = analysisMarkKey_(
       context.year,
@@ -211,19 +370,34 @@ function getAnalysis(year, grade, term) {
     if (marksMap.has(key)) {
 
       duplicateWarnings.push(
-        'Duplicate mark at row ' + sheetRow +
-        ' for student ' + studentId +
-        ', subject ' + subject
+        'Duplicate mark at row ' +
+        sheetRow +
+        ' for student ' +
+        studentId +
+        ', subject ' +
+        subject
       );
 
-      // Duplicate results remain invalid.
+      duplicateKeys.add(key);
+
+      // Duplicate results are not used.
       marksMap.set(key, null);
+
       continue;
     }
 
-    if (!marksMap.has(key)) {
-      marksMap.set(key, mark);
+    /*
+     * Never restore a duplicated mark,
+     * even if there are three or more rows.
+     */
+    if (duplicateKeys.has(key)) {
+      continue;
     }
+
+    marksMap.set(
+      key,
+      mark
+    );
   }
 
   /* ========== STUDENT PERFORMANCE ========== */
@@ -231,13 +405,17 @@ function getAnalysis(year, grade, term) {
   const studentResults = [];
 
   let completeCount = 0;
+
   let classAverageSum = 0;
   let studentsWithAverage = 0;
 
   for (const student of registeredStudents) {
 
-    const expectedSubjects = enrollmentMap.get(student.id);
-    const expected = expectedSubjects.length;
+    const expectedSubjects =
+      enrollmentMap.get(student.id);
+
+    const expected =
+      expectedSubjects.length;
 
     const marks = {};
     const missing = [];
@@ -259,47 +437,66 @@ function getAnalysis(year, grade, term) {
 
       const mark = marksMap.get(key);
 
+      /* ========== NUMERIC MARK ========== */
+
       if (typeof mark === 'number') {
 
         marks[subject] = mark;
 
         totalRecorded += mark;
+
         entered++;
         numericCount++;
 
+      /* ========== ABSENT ========== */
+
       } else if (mark === 'ABSENT') {
 
-        // Display AB instead of ABSENT.
+        // Display AB.
         marks[subject] = 'AB';
 
-        // Absence is entered and contributes zero.
+        // Counts as entered, worth zero.
         entered++;
         absent++;
 
+      /* ========== PENDING ========== */
+
       } else {
 
-        // Only genuinely missing results are pending.
         missing.push(subject);
       }
     }
 
-    /* ========== STUDENT COMPLETION ========== */
+    /* ========== COMPLETION ========== */
 
-    const complete = expected > 0 && entered === expected;
+    const complete =
+      expected > 0 &&
+      entered === expected;
 
     /*
-     * Divide by all enrolled subjects.
-     * Absent subjects count as zero.
+     * Student average:
+     *
+     * Total numeric marks divided by
+     * ALL enrolled subjects.
+     *
+     * ABSENT contributes zero.
+     *
+     * A final average is calculated
+     * only after every subject is entered.
      */
-    const average = complete && expected > 0
-      ? analysisRound_(totalRecorded / expected)
-      : null;
+    const average =
+      complete && expected > 0
+        ? analysisRound_(
+            totalRecorded / expected
+          )
+        : null;
 
     if (complete) {
 
       completeCount++;
 
       if (average !== null) {
+
         classAverageSum += average;
         studentsWithAverage++;
       }
@@ -316,7 +513,10 @@ function getAnalysis(year, grade, term) {
 
       complete,
 
-      totalRecorded: analysisRound_(totalRecorded),
+      totalRecorded: analysisRound_(
+        totalRecorded
+      ),
+
       average,
 
       marks,
@@ -328,19 +528,30 @@ function getAnalysis(year, grade, term) {
 
   const subjectResults = [];
 
-  for (const subject of Object.keys(register.columns)) {
+  for (
+    const subject of Object.keys(
+      register.columns
+    )
+  ) {
 
-    const enrolledStudents = registeredStudents.filter(student => {
-      return enrollmentMap.get(student.id).includes(subject);
-    });
+    const enrolledStudents =
+      registeredStudents.filter(
+        student => {
+          return enrollmentMap
+            .get(student.id)
+            .includes(subject);
+        }
+      );
 
-    const enrolled = enrolledStudents.length;
+    const enrolled =
+      enrolledStudents.length;
 
     if (enrolled === 0) {
       continue;
     }
 
     const values = [];
+
     let absent = 0;
 
     for (const student of enrolledStudents) {
@@ -356,42 +567,61 @@ function getAnalysis(year, grade, term) {
       const mark = marksMap.get(key);
 
       if (typeof mark === 'number') {
+
         values.push(mark);
+
       } else if (mark === 'ABSENT') {
+
         absent++;
       }
     }
 
     /* ========== SUBJECT COMPLETION ========== */
 
-    const entered = values.length + absent;
-    const pending = enrolled - entered;
+    const entered =
+      values.length + absent;
+
+    const pending =
+      enrolled - entered;
 
     /*
-     * Include ABSENT as zero in the divisor.
-     * Pending marks are excluded.
+     * Subject average:
+     *
+     * Numeric total divided by
+     * submitted results.
+     *
+     * ABSENT counts as zero.
+     * Pending results are excluded.
      */
-    const average = entered > 0
-      ? analysisRound_(
-          values.reduce(
-            (sum, mark) => sum + mark,
-            0
-          ) / entered
-        )
-      : null;
+    const average =
+      entered > 0
+        ? analysisRound_(
+            values.reduce(
+              (sum, mark) => sum + mark,
+              0
+            ) / entered
+          )
+        : null;
 
     /*
-     * ABSENT counts as zero for highest/lowest.
-     * Highest and lowest are only available
-     * when at least one result is entered.
+     * ABSENT contributes zero when
+     * determining highest and lowest.
      */
-    const highest = entered > 0
-      ? Math.max(...values, ...(absent > 0 ? [0] : []))
-      : null;
+    const highest =
+      entered > 0
+        ? Math.max(
+            ...values,
+            ...(absent > 0 ? [0] : [])
+          )
+        : null;
 
-    const lowest = entered > 0
-      ? Math.min(...values, ...(absent > 0 ? [0] : []))
-      : null;
+    const lowest =
+      entered > 0
+        ? Math.min(
+            ...values,
+            ...(absent > 0 ? [0] : [])
+          )
+        : null;
 
     subjectResults.push({
       subject,
@@ -399,7 +629,6 @@ function getAnalysis(year, grade, term) {
       entered,
       absent,
       pending,
-
       average,
       highest,
       lowest
@@ -409,20 +638,27 @@ function getAnalysis(year, grade, term) {
   /* ========== CLASS AVERAGE ========== */
 
   /*
-   * Class average uses completed students only.
-   * Their individual averages already include
-   * ABSENT as zero.
+   * Only completed students contribute
+   * to the final class average.
+   *
+   * Their individual averages already
+   * include ABSENT as zero.
    */
-  const classAverage = studentsWithAverage > 0
-    ? analysisRound_(
-        classAverageSum / studentsWithAverage
-      )
-    : null;
+  const classAverage =
+    studentsWithAverage > 0
+      ? analysisRound_(
+          classAverageSum /
+          studentsWithAverage
+        )
+      : null;
 
-  const studentCount = registeredStudents.length;
-  const pendingCount = studentCount - completeCount;
+  const studentCount =
+    registeredStudents.length;
 
-  /* ========== RETURN DASHBOARD DATA ========== */
+  const pendingCount =
+    studentCount - completeCount;
+
+  /* ========== RETURN RESULTS ========== */
 
   return {
     year: context.year,
@@ -449,12 +685,16 @@ function getAnalysis(year, grade, term) {
       'ABSENT counts as entered for submission completion. ' +
       'Blank marks remain pending. ' +
       'Final student and class averages include complete results only. ' +
-      'Subject averages use submitted results and may be provisional.'
+      'Subject averages use submitted results and may be provisional. ' +
+      'A/L averages here are general school averages, not official Z-scores.'
   };
 }
 
-/* ========== TEST FUNCTION ========== */
+/* ========== TEST FUNCTIONS ========== */
 
+/**
+ * Original Grade 06 test.
+ */
 function testAnalysis() {
 
   const result = getAnalysis(
@@ -463,18 +703,95 @@ function testAnalysis() {
     'Term 1'
   );
 
-  Logger.log(JSON.stringify({
-    year: result.year,
-    grade: result.grade,
-    term: result.term,
+  Logger.log(
+    JSON.stringify({
+      year: result.year,
+      grade: result.grade,
+      term: result.term,
 
-    studentCount: result.studentCount,
-    completeCount: result.completeCount,
-    pendingCount: result.pendingCount,
+      studentCount: result.studentCount,
+      completeCount: result.completeCount,
+      pendingCount: result.pendingCount,
 
-    classAverage: result.classAverage,
+      classAverage: result.classAverage,
 
-    subjects: result.subjects.length,
-    warnings: result.warnings
-  }));
+      subjects: result.subjects.length,
+      warnings: result.warnings
+    })
+  );
+}
+
+/**
+ * Test Grade 11 analysis.
+ *
+ * Requires a Grade 11 register.
+ */
+function testAnalysisGrade11() {
+
+  const result = getAnalysis(
+    2026,
+    'Grade 11',
+    'Term 1'
+  );
+
+  Logger.log(
+    JSON.stringify({
+      grade: result.grade,
+      studentCount: result.studentCount,
+      completeCount: result.completeCount,
+      classAverage: result.classAverage,
+      subjects: result.subjects.length,
+      warnings: result.warnings
+    }, null, 2)
+  );
+}
+
+/**
+ * Test Grade 12 analysis.
+ *
+ * Requires a Grade 12 register.
+ */
+function testAnalysisGrade12() {
+
+  const result = getAnalysis(
+    2026,
+    'Grade 12',
+    'Term 1'
+  );
+
+  Logger.log(
+    JSON.stringify({
+      grade: result.grade,
+      studentCount: result.studentCount,
+      completeCount: result.completeCount,
+      classAverage: result.classAverage,
+      subjects: result.subjects.length,
+      warnings: result.warnings
+    }, null, 2)
+  );
+}
+
+/**
+ * Test Grade 13 analysis.
+ *
+ * Requires a Grade 13 register.
+ */
+function testAnalysisGrade13() {
+
+  const result = getAnalysis(
+    2026,
+    'Grade 13',
+    'Term 1'
+  );
+
+  Logger.log(
+    JSON.stringify({
+      grade: result.grade,
+      studentCount: result.studentCount,
+      completeCount: result.completeCount,
+      classAverage: result.classAverage,
+      subjects: result.subjects.length,
+      warnings: result.warnings
+    }, null, 2)
+  );
 }

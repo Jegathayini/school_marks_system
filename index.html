@@ -491,7 +491,10 @@ const live = typeof google !== "undefined" &&
              google.script && google.script.run;
 
 let subjects = [];
+let subjectsByGrade = {};
 let subject = "";
+let studentLoadRequest = 0;
+let savingMarks = false;
 let students = [];
 let submissionStatus = null;
 let trackerRequest = 0;
@@ -569,8 +572,8 @@ function init() {
         el("grade").add(new Option(grade, grade));
       }
 
-      subjects = data.subjects || [];
-      subject = subjects[0] || "";
+      subjectsByGrade = data.subjectsByGrade || {};
+      updateGradeSubjects();
 
       el("mode").textContent = "Google Sheets connected";
       renderSubjects();
@@ -598,6 +601,16 @@ function go(page) {
   if (page === 2) refreshSubmissionStatus();
 }
 
+function updateGradeSubjects() {
+  const grade = el("grade").value;
+  subjects = Array.isArray(subjectsByGrade[grade])
+    ? subjectsByGrade[grade].slice()
+    : [];
+  if (!subjects.includes(subject)) subject = subjects[0] || "";
+  submissionStatus = null;
+  renderSubjects();
+}
+
 function renderSubjects() {
   const host = el("subjects");
   host.replaceChildren();
@@ -622,7 +635,7 @@ function renderSubjects() {
 
   el("subjectHint").textContent = subject
     ? "Selected subject: " + subject
-    : "Select a subject.";
+    : "No subjects available for this grade.";
 }
 
 function refreshSubmissionStatus() {
@@ -637,7 +650,10 @@ function refreshSubmissionStatus() {
 
   google.script.run
     .withSuccessHandler(data => {
-      if (request !== trackerRequest) return;
+      if (request !== trackerRequest ||
+          grade !== el("grade").value ||
+          year !== el("year").value ||
+          term !== el("term").value) return;
 
       submissionStatus = data;
       const total = data.required || 0;
@@ -672,23 +688,26 @@ function refreshSubmissionStatus() {
 }
 
 function loadStudents() {
-  if (!subject) {
-    alert("Select a subject first.");
+  if (!subject || !subjects.includes(subject)) {
+    alert("Select a subject for this grade first.");
     return;
   }
 
   const grade = el("grade").value;
   const year = el("year").value;
   const term = el("term").value;
+  const selectedSubject = subject;
+  const request = ++studentLoadRequest;
 
   message("notice", "Checking existing marks...");
 
   google.script.run
     .withSuccessHandler(status => {
+      if (request !== studentLoadRequest) return;
       submissionStatus = status;
       renderSubjects();
 
-      const selected = status.subjects.find(s => s.subject === subject);
+      const selected = (status.subjects || []).find(s => s.subject === selectedSubject);
       if (!selected) {
         alert("No enrolled students for this subject.");
         return;
@@ -696,6 +715,7 @@ function loadStudents() {
 
       google.script.run
         .withSuccessHandler(list => {
+          if (request !== studentLoadRequest) return;
           const missingIds = Array.isArray(selected.missingIds)
             ? new Set(selected.missingIds.map(String))
             : null;
@@ -705,7 +725,7 @@ function loadStudents() {
           );
 
           el("selection").textContent =
-            grade + " · " + subject + " · " + term;
+            grade + " · " + selectedSubject + " · " + term;
 
           el("studentCount").textContent =
             students.length + " student(s) awaiting marks";
@@ -765,14 +785,19 @@ function loadStudents() {
           el("notice").classList.add("hidden");
           go(3);
         })
-        .withFailureHandler(err => alert(err.message))
-        .getStudents(grade, subject);
+        .withFailureHandler(err => {
+          if (request === studentLoadRequest) alert(err.message);
+        })
+        .getStudents(grade, selectedSubject);
     })
-    .withFailureHandler(err => alert(err.message))
+    .withFailureHandler(err => {
+      if (request === studentLoadRequest) alert(err.message);
+    })
     .getSubmissionStatus(year, grade, term);
 }
 
 function submitMarks() {
+  if (savingMarks) return;
   // Read one row at a time: each row has a marks input and an Absent checkbox.
   const marks = Array.from(el("studentRows").querySelectorAll("tr"))
     .map(row => {
@@ -808,24 +833,35 @@ function submitMarks() {
 
   const button = el("submitButton");
   button.disabled = true;
+  savingMarks = true;
+  const savedContext = {
+    year: el("year").value,
+    grade: el("grade").value,
+    term: el("term").value,
+    subject
+  };
 
   google.script.run
     .withSuccessHandler(result => {
+      savingMarks = false;
+      button.disabled = false;
       message("notice", result.added + " results saved successfully.");
       el("notice").className = "message success";
-      button.disabled = false;
       refreshSubmissionStatus();
-      loadStudents();
+      // Keep the success message visible. Teachers can return
+      // to subject selection to load remaining pending students.
+      students = [];
+      el("studentRows").replaceChildren();
+      el("studentCount").textContent = "Saved. Return to subjects to refresh pending students.";
+      button.disabled = true;
     })
     .withFailureHandler(err => {
+      savingMarks = false;
       message("notice", "Save failed: " + err.message, true);
       button.disabled = false;
     })
     .saveMarks({
-      year: el("year").value,
-      grade: el("grade").value,
-      term: el("term").value,
-      subject,
+      ...savedContext,
       marks: entered
     });
 }
@@ -1286,7 +1322,12 @@ function drawAverageChart(hostId, terms) {
 /* ========== EVENTS ========== */
 
 ["grade", "year", "term"].forEach(id => {
-  el(id).addEventListener("change", refreshSubmissionStatus);
+  el(id).addEventListener("change", () => {
+    ++studentLoadRequest;
+    if (id === "grade") updateGradeSubjects();
+    refreshSubmissionStatus();
+    go(1);
+  });
 });
 
 ["analysisGrade", "analysisYear", "analysisTerm"].forEach(id => {

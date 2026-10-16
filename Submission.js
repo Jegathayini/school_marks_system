@@ -3,14 +3,21 @@
  * SCHOOL ACADEMIC MANAGEMENT SYSTEM
  * File 5 of 7: Submission.gs
  *
- * Submission validation and verification utilities.
+ * MULTI-REGISTER SUBMISSION VALIDATION
+ *
+ * Grades 06-09 -> Junior Register
+ * Grades 10-11 -> O/L Register
+ * Grades 12-13 -> A/L Register
  *
  * Supports:
- * - Numeric marks (0 to 100)
+ * - Dynamically detected subjects
+ * - Numeric marks from 0 to 100
  * - ABSENT as a valid recorded result
  * - Duplicate submission prevention
  * - Pending student identification
  * - Submission progress summaries
+ *
+ * This file does not modify spreadsheet data.
  *
  * Dependencies:
  *
@@ -28,16 +35,18 @@
  *
  * Dashboard.gs:
  *   getSubmissionStatus()
- *
- * This file does not modify spreadsheet data.
  */
 
 /* ========== SUBJECT VALIDATION ========== */
 
 /**
- * Validate a subject against the student register.
+ * Validate a subject against the correct
+ * register for the selected grade.
+ *
+ * Example:
+ * submissionValidateSubject_('ICT', 'Grade 12')
  */
-function submissionValidateSubject_(subject) {
+function submissionValidateSubject_(subject, grade) {
 
   const name = String(subject || '').trim();
 
@@ -45,13 +54,27 @@ function submissionValidateSubject_(subject) {
     throw new Error('Please select a subject.');
   }
 
-  const register = readRegister_();
+  const normalizedGrade = normalizeGrade_(grade);
 
-  if (!Object.prototype.hasOwnProperty.call(
-    register.columns,
-    name
-  )) {
-    throw new Error('Unknown subject: ' + name);
+  if (!normalizedGrade) {
+    throw new Error('Invalid grade.');
+  }
+
+  // Automatically select the correct register.
+  const register = readRegister_(normalizedGrade);
+
+  if (
+    !Object.prototype.hasOwnProperty.call(
+      register.columns,
+      name
+    )
+  ) {
+    throw new Error(
+      'Unknown subject "' +
+      name +
+      '" for ' +
+      normalizedGrade
+    );
   }
 
   return name;
@@ -60,50 +83,79 @@ function submissionValidateSubject_(subject) {
 /* ========== CHECK EXISTING MARKS ========== */
 
 /**
- * Check whether a student's result is already stored.
+ * Check whether a student's result already exists.
  *
  * Example:
  *
  * checkMarkExists(
  *   2026,
- *   'Grade 06',
+ *   'Grade 12',
  *   'Term 1',
  *   'ST001',
- *   'Maths'
+ *   'Economics'
  * )
  *
  * Returns:
  * {
  *   exists: true,
  *   mark: 75 OR 'ABSENT',
- *   duplicate: false
+ *   duplicate: false,
+ *   count: 1,
+ *   rows: [2]
  * }
+ *
+ * This function does not change stored marks.
  */
-function checkMarkExists(year, grade, term, studentId, subject) {
+function checkMarkExists(
+  year,
+  grade,
+  term,
+  studentId,
+  subject
+) {
 
-  const context = validateContext_(year, grade, term);
-  const selectedSubject = submissionValidateSubject_(subject);
+  const context = validateContext_(
+    year,
+    grade,
+    term
+  );
+
+  const selectedSubject = submissionValidateSubject_(
+    subject,
+    context.grade
+  );
+
   const id = String(studentId || '').trim();
 
   if (!id) {
     throw new Error('Student ID is required.');
   }
 
-  const register = readRegister_();
+  // Read the correct register.
+  const register = readRegister_(context.grade);
 
   const student = readStudents_(register.rows).find(
-    s => s.id === id && s.grade === context.grade
+    s =>
+      s.id === id &&
+      s.grade === context.grade
   );
 
   if (!student) {
     throw new Error(
-      'Student not found in ' + context.grade + ': ' + id
+      'Student not found in ' +
+      context.grade +
+      ': ' +
+      id
     );
   }
 
-  if (!yes_(student.row[register.columns[selectedSubject]])) {
+  const subjectColumn =
+    register.columns[selectedSubject];
+
+  if (!yes_(student.row[subjectColumn])) {
     throw new Error(
-      'Student is not enrolled in ' + selectedSubject
+      'Student is not enrolled in ' +
+      selectedSubject
     );
   }
 
@@ -121,6 +173,7 @@ function checkMarkExists(year, grade, term, studentId, subject) {
       String(row[3]).trim() === id &&
       String(row[6]).trim() === selectedSubject
     ) {
+
       matches.push({
         rowNumber: i + 2,
         mark: row[7]
@@ -130,26 +183,50 @@ function checkMarkExists(year, grade, term, studentId, subject) {
 
   return {
     exists: matches.length > 0,
-    mark: matches.length === 1 ? matches[0].mark : null,
+
+    mark:
+      matches.length === 1
+        ? matches[0].mark
+        : null,
+
     duplicate: matches.length > 1,
     count: matches.length,
-    rows: matches.map(m => m.rowNumber)
+
+    rows: matches.map(
+      match => match.rowNumber
+    )
   };
 }
 
 /* ========== GET PENDING STUDENTS ========== */
 
 /**
- * Return students whose results are still missing.
+ * Return students who are enrolled in a
+ * subject but do not have a valid result.
  *
- * ABSENT is considered an entered result.
- * Therefore, absent students are not returned
- * as pending.
+ * ABSENT counts as entered.
+ * Blank marks remain pending.
+ *
+ * Duplicate or invalid results remain pending
+ * until the records are corrected.
  */
-function getPendingStudents(year, grade, term, subject) {
+function getPendingStudents(
+  year,
+  grade,
+  term,
+  subject
+) {
 
-  const context = validateContext_(year, grade, term);
-  const selectedSubject = submissionValidateSubject_(subject);
+  const context = validateContext_(
+    year,
+    grade,
+    term
+  );
+
+  const selectedSubject = submissionValidateSubject_(
+    subject,
+    context.grade
+  );
 
   const analysis = getAnalysis(
     context.year,
@@ -157,13 +234,19 @@ function getPendingStudents(year, grade, term, subject) {
     context.term
   );
 
-  const register = readRegister_();
+  // Read the correct register.
+  const register = readRegister_(context.grade);
 
-  const enrolledStudents = readStudents_(register.rows)
-    .filter(student =>
+  const subjectColumn =
+    register.columns[selectedSubject];
+
+  const enrolledStudents = readStudents_(
+    register.rows
+  ).filter(
+    student =>
       student.grade === context.grade &&
-      yes_(student.row[register.columns[selectedSubject]])
-    );
+      yes_(student.row[subjectColumn])
+  );
 
   const resultMap = new Map(
     analysis.students.map(student => [
@@ -179,9 +262,10 @@ function getPendingStudents(year, grade, term, subject) {
     const result = resultMap.get(student.id);
 
     if (
-      result &&
+      !result ||
       result.missing.includes(selectedSubject)
     ) {
+
       pendingStudents.push({
         id: student.id,
         name: student.name
@@ -198,8 +282,10 @@ function getPendingStudents(year, grade, term, subject) {
     enrolled: enrolledStudents.length,
     pending: pendingStudents.length,
 
-    // Includes numeric marks and ABSENT.
-    entered: enrolledStudents.length - pendingStudents.length,
+    // Numeric marks and ABSENT both count.
+    entered:
+      enrolledStudents.length -
+      pendingStudents.length,
 
     students: pendingStudents
   };
@@ -208,7 +294,7 @@ function getPendingStudents(year, grade, term, subject) {
 /* ========== VALIDATE SUBMISSION ========== */
 
 /**
- * Check a proposed marks submission before saving.
+ * Validate proposed marks before saving.
  *
  * This function DOES NOT save marks.
  *
@@ -216,9 +302,9 @@ function getPendingStudents(year, grade, term, subject) {
  *
  * {
  *   year: 2026,
- *   grade: 'Grade 06',
+ *   grade: 'Grade 12',
  *   term: 'Term 1',
- *   subject: 'Maths',
+ *   subject: 'Economics',
  *   marks: [
  *     { id: 'ST001', mark: 78 },
  *     { id: 'ST002', mark: 'ABSENT' },
@@ -226,13 +312,19 @@ function getPendingStudents(year, grade, term, subject) {
  *   ]
  * }
  *
- * Blank marks are ignored.
- * ABSENT counts as entered.
- * Existing results are rejected.
+ * Rules:
+ * - Only enrolled students are accepted.
+ * - Blank marks are skipped.
+ * - ABSENT is valid.
+ * - Existing results cannot be overwritten.
+ * - Duplicate student IDs are rejected.
  */
 function validateMarksSubmission(payload) {
 
-  if (!payload || typeof payload !== 'object') {
+  if (
+    !payload ||
+    typeof payload !== 'object'
+  ) {
     throw new Error('Invalid submission.');
   }
 
@@ -243,26 +335,41 @@ function validateMarksSubmission(payload) {
   );
 
   const selectedSubject = submissionValidateSubject_(
-    payload.subject
+    payload.subject,
+    context.grade
   );
 
   if (!Array.isArray(payload.marks)) {
-    throw new Error('Marks must be provided as an array.');
+    throw new Error(
+      'Marks must be provided as an array.'
+    );
   }
 
-  const register = readRegister_();
+  /* ========== ALLOWED STUDENTS ========== */
 
-  const allowedStudents = readStudents_(register.rows)
-    .filter(student =>
+  const register = readRegister_(context.grade);
+
+  const subjectColumn =
+    register.columns[selectedSubject];
+
+  const allowedStudents = readStudents_(
+    register.rows
+  ).filter(
+    student =>
       student.grade === context.grade &&
-      yes_(student.row[register.columns[selectedSubject]])
-    );
-
-  const allowedIds = new Set(
-    allowedStudents.map(student => student.id)
+      yes_(student.row[subjectColumn])
   );
 
+  const allowedIds = new Set(
+    allowedStudents.map(
+      student => student.id
+    )
+  );
+
+  /* ========== EXISTING MARKS ========== */
+
   const existingRows = analysisReadMarks_();
+
   const existingKeys = new Set();
 
   for (const row of existingRows) {
@@ -271,66 +378,108 @@ function validateMarksSubmission(payload) {
       analysisMarkKey_(
         row[0],
         normalizeGrade_(row[1]),
-        row[2],
-        row[3],
-        row[6]
+        String(row[2]).trim(),
+        String(row[3]).trim(),
+        String(row[6]).trim()
       )
     );
   }
 
+  /* ========== SUBMISSION VALIDATION ========== */
+
   const seenIds = new Set();
+
   const accepted = [];
   const skipped = [];
   const errors = [];
 
   for (const item of payload.marks) {
 
-    const id = String(item.id || '').trim();
-
-    if (!id) {
-      errors.push('A student record has no ID.');
+    if (
+      !item ||
+      typeof item !== 'object'
+    ) {
+      errors.push('Invalid student record.');
       continue;
     }
 
+    const id = String(
+      item.id || ''
+    ).trim();
+
+    if (!id) {
+      errors.push(
+        'A student record has no ID.'
+      );
+      continue;
+    }
+
+    /* ========== DUPLICATE STUDENT CHECK ========== */
+
     if (seenIds.has(id)) {
-      errors.push('Duplicate student in submission: ' + id);
+
+      errors.push(
+        'Duplicate student in submission: ' +
+        id
+      );
+
       continue;
     }
 
     seenIds.add(id);
 
+    /* ========== ENROLLMENT CHECK ========== */
+
     if (!allowedIds.has(id)) {
-      errors.push('Student is not enrolled: ' + id);
+
+      errors.push(
+        'Student is not enrolled: ' +
+        id
+      );
+
       continue;
     }
 
-    // Blank marks remain pending.
+    /* ========== BLANK MARKS ========== */
+
     if (
       item.mark === '' ||
       item.mark === null ||
       item.mark === undefined
     ) {
+
       skipped.push(id);
       continue;
     }
 
-    const markText = String(item.mark).trim();
+    const markText = String(
+      item.mark
+    ).trim();
 
     let mark;
 
     /* ========== ABSENT VALIDATION ========== */
 
-    if (markText.toUpperCase() === 'ABSENT') {
+    if (
+      markText.toUpperCase() === 'ABSENT'
+    ) {
 
-      // Store a consistent uppercase value.
       mark = 'ABSENT';
 
     } else {
 
-      /* ========== NUMERIC MARK VALIDATION ========== */
+      /* ========== NUMERIC VALIDATION ========== */
 
-      if (!/^\d+(?:\.\d+)?$/.test(markText)) {
-        errors.push('Invalid mark for student ' + id);
+      if (
+        typeof item.mark === 'boolean' ||
+        !/^\d+(?:\.\d+)?$/.test(markText)
+      ) {
+
+        errors.push(
+          'Invalid mark for student ' +
+          id
+        );
+
         continue;
       }
 
@@ -341,14 +490,17 @@ function validateMarksSubmission(payload) {
         mark < 0 ||
         mark > 100
       ) {
+
         errors.push(
-          'Mark must be between 0 and 100: ' + id
+          'Mark must be between 0 and 100: ' +
+          id
         );
+
         continue;
       }
     }
 
-    /* ========== DUPLICATE PREVENTION ========== */
+    /* ========== EXISTING RESULT CHECK ========== */
 
     const key = analysisMarkKey_(
       context.year,
@@ -359,11 +511,16 @@ function validateMarksSubmission(payload) {
     );
 
     if (existingKeys.has(key)) {
+
       errors.push(
-        'Result already submitted for student ' + id
+        'Result already submitted for student ' +
+        id
       );
+
       continue;
     }
+
+    /* ========== ACCEPT VALID MARK ========== */
 
     accepted.push({
       id,
@@ -371,8 +528,12 @@ function validateMarksSubmission(payload) {
     });
   }
 
+  /* ========== RETURN VALIDATION RESULT ========== */
+
   return {
-    valid: errors.length === 0 && accepted.length > 0,
+    valid:
+      errors.length === 0 &&
+      accepted.length > 0,
 
     year: context.year,
     grade: context.grade,
@@ -383,7 +544,6 @@ function validateMarksSubmission(payload) {
     skippedCount: skipped.length,
     errorCount: errors.length,
 
-    // Separate absence count for easier reporting.
     absentCount: accepted.filter(
       item => item.mark === 'ABSENT'
     ).length,
@@ -401,19 +561,35 @@ function validateMarksSubmission(payload) {
 /* ========== SUBMISSION SUMMARY ========== */
 
 /**
- * Return a summary of submission progress.
+ * Return a grade-specific summary of
+ * marks submission progress.
  *
- * Numeric marks and ABSENT both count as entered.
+ * This uses Dashboard.gs.
+ *
+ * Numeric marks and ABSENT both count
+ * as entered.
  */
-function getSubmissionSummary(year, grade, term) {
+function getSubmissionSummary(
+  year,
+  grade,
+  term
+) {
 
-  const status = getSubmissionStatus(year, grade, term);
+  const status = getSubmissionStatus(
+    year,
+    grade,
+    term
+  );
 
-  const percent = status.expectedMarks > 0
-    ? Math.round(
-        (status.enteredMarks / status.expectedMarks) * 10000
-      ) / 100
-    : 0;
+  const percent =
+    status.expectedMarks > 0
+      ? Math.round(
+          (
+            status.enteredMarks /
+            status.expectedMarks
+          ) * 10000
+        ) / 100
+      : 0;
 
   return {
     year: status.year,
@@ -425,7 +601,6 @@ function getSubmissionSummary(year, grade, term) {
     expectedMarks: status.expectedMarks,
     enteredMarks: status.enteredMarks,
 
-    // New absence-aware fields.
     numericMarks: status.numericMarks,
     absentMarks: status.absentMarks,
 
@@ -443,54 +618,132 @@ function getSubmissionSummary(year, grade, term) {
   };
 }
 
-/* ========== TEST FUNCTION ========== */
+/* ========== TEST FUNCTIONS ========== */
 
 /**
- * Read-only test for submission tracking.
+ * Generic read-only submission test.
  *
- * Uses Grade 06, Term 1, 2026.
+ * Run with fictional student data.
  */
-function testSubmission() {
+function testSubmissionForGrade_(
+  year,
+  grade,
+  term
+) {
 
-  const summary = getSubmissionSummary(
-    2026,
-    'Grade 06',
-    'Term 1'
+  const context = validateContext_(
+    year,
+    grade,
+    term
   );
 
-  Logger.log(JSON.stringify(summary));
+  const summary = getSubmissionSummary(
+    context.year,
+    context.grade,
+    context.term
+  );
 
-  const register = readRegister_();
+  Logger.log(
+    JSON.stringify(
+      summary,
+      null,
+      2
+    )
+  );
 
-  const students = readStudents_(register.rows)
-    .filter(student => student.grade === 'Grade 06');
+  const register = readRegister_(
+    context.grade
+  );
+
+  const students = readStudents_(
+    register.rows
+  ).filter(
+    student =>
+      student.grade === context.grade
+  );
 
   if (students.length > 0) {
 
     const student = students[0];
 
-    const subjects = Object.keys(register.columns)
-      .filter(subject =>
-        yes_(student.row[register.columns[subject]])
-      );
+    const subjects = Object.keys(
+      register.columns
+    ).filter(
+      subject =>
+        yes_(
+          student.row[
+            register.columns[subject]
+          ]
+        )
+    );
 
     if (subjects.length > 0) {
 
       const check = checkMarkExists(
-        2026,
-        'Grade 06',
-        'Term 1',
+        context.year,
+        context.grade,
+        context.term,
         student.id,
         subjects[0]
       );
 
       Logger.log(
-        'Existing result check: ' + JSON.stringify(check)
+        'Existing result check: ' +
+        JSON.stringify(check)
       );
     }
   }
 
   Logger.log(
-    'Submission verification completed successfully.'
+    'Submission verification completed for ' +
+    context.grade
+  );
+}
+
+/**
+ * Original Grade 06 test.
+ */
+function testSubmission() {
+
+  testSubmissionForGrade_(
+    2026,
+    'Grade 06',
+    'Term 1'
+  );
+}
+
+/**
+ * Grade 11 test.
+ */
+function testSubmissionGrade11() {
+
+  testSubmissionForGrade_(
+    2026,
+    'Grade 11',
+    'Term 1'
+  );
+}
+
+/**
+ * Grade 12 test.
+ */
+function testSubmissionGrade12() {
+
+  testSubmissionForGrade_(
+    2026,
+    'Grade 12',
+    'Term 1'
+  );
+}
+
+/**
+ * Grade 13 test.
+ */
+function testSubmissionGrade13() {
+
+  testSubmissionForGrade_(
+    2026,
+    'Grade 13',
+    'Term 1'
   );
 }
