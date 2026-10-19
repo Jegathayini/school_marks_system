@@ -12,7 +12,6 @@
  * All grades use:
  * - One web application
  * - One Marks_Entries sheet
- * - One Marks_Audit sheet
  *
  * Each register must contain:
  * Row 1: Main headings
@@ -74,7 +73,6 @@ const REGISTER_SHEET = 'Grade 06 to 09';
 /* ========== MARKS CONFIGURATION ========== */
 
 const MARKS_SHEET = 'Marks_Entries';
-const AUDIT_SHEET = 'Marks_Audit';
 
 const RELIGION = [
   'Hinduism',
@@ -101,16 +99,7 @@ const MARKS_HEADERS = [
   'UpdatedAt'
 ];
 
-const AUDIT_HEADERS = [
-  'Timestamp',
-  'AcademicYear',
-  'Grade',
-  'Term',
-  'StudentID',
-  'SubjectOption',
-  'PreviousMark',
-  'NewMark'
-];
+
 
 /* ========== WEB APPLICATION ========== */
 
@@ -665,7 +654,7 @@ function getStudents(grade, subject) {
 /* ========== SHEET INITIALIZATION ========== */
 
 /**
- * Create marks/audit sheets if missing.
+ * Create the marks sheet if missing.
  *
  * Existing sheet headings are validated
  * before new marks are saved.
@@ -885,10 +874,7 @@ function saveMarks(payload) {
       MARKS_HEADERS
     );
 
-    const auditSheet = ensureSheet_(
-      AUDIT_SHEET,
-      AUDIT_HEADERS
-    );
+
 
     /* ========== CHECK EXISTING RECORDS ========== */
 
@@ -937,7 +923,6 @@ function saveMarks(payload) {
     const now = new Date();
 
     const newRows = [];
-    const auditRows = [];
 
     /* ========== PREPARE NEW RECORDS ========== */
 
@@ -977,16 +962,7 @@ function saveMarks(payload) {
         now
       ]);
 
-      auditRows.push([
-        now,
-        context.year,
-        context.grade,
-        context.term,
-        entry.id,
-        subject,
-        '',
-        entry.mark
-      ]);
+
     }
 
     /* ========== SAVE MARKS ========== */
@@ -999,17 +975,6 @@ function saveMarks(payload) {
         MARKS_HEADERS.length
       )
       .setValues(newRows);
-
-    /* ========== SAVE AUDIT RECORDS ========== */
-
-    auditSheet
-      .getRange(
-        auditSheet.getLastRow() + 1,
-        1,
-        auditRows.length,
-        AUDIT_HEADERS.length
-      )
-      .setValues(auditRows);
 
     return {
       added: newRows.length,
