@@ -1,6 +1,6 @@
-# School Marks System
+# 🎓 School Marks System
 
-**A Google Apps Script and Google Sheets-based academic marks management and performance analysis web application.**
+**A smart, web-based school marks management and academic performance analysis system — powered by Google Apps Script and Google Sheets.** 📚📈
 
 [![Platform](https://img.shields.io/badge/Platform-Google%20Apps%20Script-4285F4)](https://developers.google.com/apps-script)
 [![Database](https://img.shields.io/badge/Data-Google%20Sheets-34A853)](https://www.google.com/sheets/about/)
@@ -9,7 +9,21 @@
 
 > **Important:** This repository contains a customizable application prototype, not a preconfigured school database. The custom authentication implementation is marked **TEST-ONLY**. Use fictional data for evaluation. Do not deploy with real student records until the complete application, access controls, privacy arrangements, and authentication design have been independently reviewed and approved by the school.
 
-## Table of contents
+
+### 💙 Welcome to School Marks System!
+
+Managing student marks, comparing academic progress, and preparing reports should be easier for teachers and school administrators. **School Marks System** brings those tasks together in one browser-based application. 🏫
+
+**👩‍🏫 Teachers:** Enter and validate marks.  
+**👨‍💼 Administrators:** Manage teacher access, review academic performance, and generate reports.  
+**👩‍💻 Developers:** Explore the source, configure a fictional test workbook, and adapt the project to your needs.
+
+> 💡 **New here?** Start with [Installation and configuration](#installation-and-configuration), then check the [Google Sheets data model](#google-sheets-data-model) and [Security and privacy](#security-and-privacy).
+
+---
+
+<a id="table-of-contents"></a>
+## 🧭 Table of contents
 
 1. [Overview](#overview)
 2. [Main features](#main-features)
@@ -31,7 +45,8 @@
 18. [License](#license)
 19. [Author](#author)
 
-## Overview
+<a id="overview"></a>
+## 🌟 Overview
 
 **School Marks System** aims to reduce manual marks-processing work for teachers and provide school administrators with a centralized view of student academic performance.
 
@@ -39,7 +54,8 @@ The application uses a Google Sheets workbook as its data store and Google Apps 
 
 The project is designed around a **single-school deployment** and can be adapted to a school's grade structure, subjects, academic terms, and reporting practices. It is not a multi-school SaaS platform.
 
-### Project goals
+<a id="project-goals"></a>
+### 🎯 Project goals
 
 - Let authorized teachers enter marks through a structured interface.
 - Validate submissions before they are saved.
@@ -48,9 +64,11 @@ The project is designed around a **single-school deployment** and can be adapted
 - Generate student-level reports and support PDF export.
 - Let administrators manage teacher access without giving every teacher direct editing access to the underlying spreadsheet.
 
-## Main features
+<a id="main-features"></a>
+## ✨ Main features
 
-### 1. Teacher marks entry
+<a id="1-teacher-marks-entry"></a>
+### 📝 1. Teacher marks entry
 
 - Sign in with an assigned teacher account.
 - Select the relevant grade, class, subject, academic year, and term as supported by the interface.
@@ -60,7 +78,8 @@ The project is designed around a **single-school deployment** and can be adapted
 - Detect and reject duplicate marks entries according to the server's validation rules.
 - Track the authenticated submitter on saved entries.
 
-### 2. Academic analysis
+<a id="2-academic-analysis"></a>
+### 📈 2. Academic analysis
 
 - Summarize student performance.
 - Analyze subject-level and class-level performance.
@@ -68,13 +87,15 @@ The project is designed around a **single-school deployment** and can be adapted
 - Explore improvement and performance changes over time.
 - Provide dashboard and submission-status views.
 
-### 3. Student reports
+<a id="3-student-reports"></a>
+### 📄 3. Student reports
 
 - Retrieve individual student report information.
 - Display academic results and term-based comparisons.
 - Support PDF/report export through the export module.
 
-### 4. Administrator functions
+<a id="4-administrator-functions"></a>
+### 🧑‍💼 4. Administrator functions
 
 - Access analysis and reporting features restricted to administrators.
 - Create teacher accounts.
@@ -82,7 +103,8 @@ The project is designed around a **single-school deployment** and can be adapted
 - Activate or deactivate teacher accounts.
 - Review account-management audit records **if the deployed `AccountManagement` version includes and configures audit logging**.
 
-### 5. Authentication and access control
+<a id="5-authentication-and-access-control"></a>
+### 🔒 5. Authentication and access control
 
 - Distinct `ADMIN` and `TEACHER` roles.
 - Session-based authentication with a configurable expiration policy.
@@ -92,7 +114,8 @@ The project is designed around a **single-school deployment** and can be adapted
 
 **Security qualification:** These controls are implemented in custom Apps Script code and are **not a substitute for a production-grade identity provider or security review**.
 
-## User roles
+<a id="user-roles"></a>
+## 👥 User roles
 
 | Capability | Teacher | Administrator |
 |---|:---:|:---:|
@@ -106,7 +129,8 @@ The project is designed around a **single-school deployment** and can be adapted
 
 Actual access is enforced by server-side checks in the Apps Script functions, not only by hiding interface buttons.
 
-## Technology stack
+<a id="technology-stack"></a>
+## 🛠️ Technology stack
 
 | Layer | Technology | Purpose |
 |---|---|---|
@@ -119,7 +143,8 @@ Actual access is enforced by server-side checks in the Apps Script functions, no
 
 No conventional Node.js server or relational database is required by the current architecture.
 
-## How the system works
+<a id="how-the-system-works"></a>
+## ⚙️ How the system works
 
 ```text
                  Teacher / Administrator
@@ -156,7 +181,8 @@ No conventional Node.js server or relational database is required by the current
 
 > The browser must never be treated as the source of truth for permissions, marks validation, or the identity of the person submitting marks.
 
-## Repository structure
+<a id="repository-structure"></a>
+## 📁 Repository structure
 
 ```text
 school_marks_system/
@@ -178,7 +204,8 @@ school_marks_system/
 
 **Important filename mapping:** The repository uses `.js` files for the server-side scripts. In the Google Apps Script editor, create corresponding **`.gs` script files**. Also use the filename **`Index.html`** in Apps Script if the server code calls `HtmlService.createTemplateFromFile('Index')`; Apps Script template names are case-sensitive. Rename `appscript.json` to **`appsscript.json`** when importing the manifest.
 
-## Requirements
+<a id="requirements"></a>
+## 📋 Requirements
 
 - A Google account with permission to create Google Sheets and Apps Script projects.
 - A new Google Sheets workbook for **fictional/test data**.
@@ -187,9 +214,11 @@ school_marks_system/
 - A modern web browser.
 - Basic familiarity with Google Sheets and Apps Script is helpful.
 
-## Installation and configuration
+<a id="installation-and-configuration"></a>
+## 🚀 Installation and configuration
 
-### Step 1 — Download the source
+<a id="step-1-download-the-source"></a>
+### 🔹 Step 1 — Download the source
 
 ```bash
 git clone https://github.com/Jegathayini/school_marks_system.git
@@ -198,7 +227,8 @@ cd school_marks_system
 
 Alternatively, use **Code → Download ZIP** on GitHub.
 
-### Step 2 — Create a test workbook
+<a id="step-2-create-a-test-workbook"></a>
+### 🔹 Step 2 — Create a test workbook
 
 1. Open Google Sheets and create a **new, empty workbook**.
 2. Name it something like `School_Marks_Test`.
@@ -208,7 +238,8 @@ Alternatively, use **Code → Download ZIP** on GitHub.
 
 The application relies on specific sheet names, columns, and data conventions. **Do not assume that arbitrary spreadsheet headers will work.** Inspect the constants, grade-routing helpers, and validation functions in `Code.js` and related modules before populating data.
 
-### Step 3 — Copy the server files into Apps Script
+<a id="step-3-copy-the-server-files-into-apps-script"></a>
+### 🔹 Step 3 — Copy the server files into Apps Script
 
 Create Apps Script script files and paste the corresponding source:
 
@@ -227,13 +258,15 @@ Create Apps Script script files and paste the corresponding source:
 
 **Do not** put these files into separate Apps Script projects: the functions are intended to call one another within a single project.
 
-### Step 4 — Add the HTML interface
+<a id="step-4-add-the-html-interface"></a>
+### 🔹 Step 4 — Add the HTML interface
 
 1. Create an HTML file named `Index` in the Apps Script editor.
 2. Copy the contents of GitHub's `index.html` into it.
 3. Confirm the name used by the `doGet()` function matches `Index` exactly.
 
-### Step 5 — Review the manifest
+<a id="step-5-review-the-manifest"></a>
+### 🔹 Step 5 — Review the manifest
 
 The repository's `appscript.json` is the project manifest source. In Apps Script, the actual manifest filename is `appsscript.json`.
 
@@ -242,7 +275,8 @@ The repository's `appscript.json` is the project manifest source. In Apps Script
 3. Keep only the OAuth scopes and services genuinely required by the application.
 4. Save the project and resolve any manifest validation errors before deployment.
 
-### Step 6 — Configure the workbook schema
+<a id="step-6-configure-the-workbook-schema"></a>
+### 🔹 Step 6 — Configure the workbook schema
 
 The application uses grade-register sheets, a central marks sheet, and a staff access sheet. Their **exact names and columns must match the code**.
 
@@ -254,7 +288,8 @@ A known part of the current design is:
 
 **Setup action required:** Check the grade-register names and header definitions in the actual source before creating or importing those sheets. This README deliberately does not invent an unverified complete register or marks schema.
 
-### Step 7 — Initialize test authentication
+<a id="step-7-initialize-test-authentication"></a>
+### 🔹 Step 7 — Initialize test authentication
 
 The custom authentication module requires a private `AUTH_PEPPER` Script Property. Its initialization helper creates this property and prepares the staff sheet.
 
@@ -272,7 +307,8 @@ Email | Name | Role | Active | GoogleSubject | Username | PasswordSalt | Passwor
 
 The `GoogleSubject` column is retained for compatibility; do not assume this test-only username/password flow automatically authenticates a user's Google identity.
 
-### Step 8 — Create a test administrator
+<a id="step-8-create-a-test-administrator"></a>
+### 🔹 Step 8 — Create a test administrator
 
 The project does **not** ship with a universal administrator username or password.
 
@@ -296,7 +332,8 @@ For example, the arguments represent:
 
 **Caution:** Editor-level access to the Apps Script project or underlying spreadsheet is privileged. Only trusted administrators should have it.
 
-### Step 9 — Verify the application with fictional data
+<a id="step-9-verify-the-application-with-fictional-data"></a>
+### 🔹 Step 9 — Verify the application with fictional data
 
 Before deploying, verify all required sheets and headers and then test:
 
@@ -313,7 +350,8 @@ Before deploying, verify all required sheets and headers and then test:
 
 If a test fails, inspect the Apps Script **Executions** page and verify the spreadsheet schema before changing the code.
 
-### Step 10 — Deploy a test web app
+<a id="step-10-deploy-a-test-web-app"></a>
+### 🔹 Step 10 — Deploy a test web app
 
 1. Select **Deploy → New deployment** in Apps Script.
 2. Choose **Web app**.
@@ -326,9 +364,11 @@ If a test fails, inspect the Apps Script **Executions** page and verify the spre
 
 For any school deployment, first obtain approval for the identity model, data protection, access scope, account ownership, and incident/backup procedures.
 
-## Google Sheets data model
+<a id="google-sheets-data-model"></a>
+## 📊 Google Sheets data model
 
-### A. Grade registers
+<a id="a-grade-registers"></a>
+### 📚 A. Grade registers
 
 The system separates grade-register data into the following grade ranges:
 
@@ -340,13 +380,15 @@ The system separates grade-register data into the following grade ranges:
 
 These registers are the source of student/subject information used by marks entry and validation. The exact tab names and column positions are defined by the application's code and must be checked before importing data.
 
-### B. `Marks_Entries`
+<a id="b-marks_entries"></a>
+### 🔹 B. `Marks_Entries`
 
 This sheet stores submitted academic marks centrally. The server-side marks-saving logic validates grade, academic year, term, student eligibility, subject eligibility, and accepted mark values before writing records.
 
 **Do not manually invent columns or reorder headers.** Use the precise schema expected by `Code.js`, `Submission.js`, and the analysis/report modules.
 
-### C. `Staff_Access`
+<a id="c-staff_access"></a>
+### 🔹 C. `Staff_Access`
 
 | Column | Header | Description |
 |---|---|---|
@@ -361,29 +403,36 @@ This sheet stores submitted academic marks centrally. The server-side marks-savi
 
 Passwords should **never** be stored as plaintext in this sheet. Password hashes and salts are also sensitive account records and must not be committed to GitHub or made public.
 
-### D. Account audit records
+<a id="d-account-audit-records"></a>
+### 🔹 D. Account audit records
 
 Some account-management implementations include an `Account_Audit` sheet to record administrative actions. Check the exact deployed `AccountManagement.gs` implementation for the sheet name, columns, and events logged before relying on this feature.
 
-## Account administration
+<a id="account-administration"></a>
+## 🔐 Account administration
 
-### Creating teachers
+<a id="creating-teachers"></a>
+### ➕ Creating teachers
 
 An administrator can create a teacher account through the account-management interface. New teachers are required to replace their initial password before using protected features.
 
-### Resetting passwords
+<a id="resetting-passwords"></a>
+### 🔑 Resetting passwords
 
 An administrator can issue a password reset. Credential rotation invalidates existing sessions associated with the previous password version. Users must sign in again with their new credentials.
 
-### Deactivating transferred or departing staff
+<a id="deactivating-transferred-or-departing-staff"></a>
+### 🚪 Deactivating transferred or departing staff
 
 Deactivation prevents the account from passing normal server-side account checks while it is inactive. Administrators should also review shared accounts, spreadsheet permissions, Apps Script editor access, and other external access separately.
 
 **Known edge case:** In the shared test-authentication design, reactivating an account before its previous session expires may allow an earlier session to become valid again if no credential rotation occurred. For stronger revocation, implement an account/session generation value that changes on both deactivation and reactivation.
 
-## Typical workflows
+<a id="typical-workflows"></a>
+## 🧑‍🏫 Typical workflows
 
-### Teacher workflow
+<a id="teacher-workflow"></a>
+### 👩‍🏫 Teacher workflow
 
 ```text
 Sign in
@@ -401,7 +450,8 @@ Submit
 Review submission confirmation
 ```
 
-### Administrator workflow
+<a id="administrator-workflow"></a>
+### 🏫 Administrator workflow
 
 ```text
 Sign in
@@ -414,9 +464,11 @@ Open dashboard
    └── Manage teacher accounts
 ```
 
-## Security and privacy
+<a id="security-and-privacy"></a>
+## 🛡️ Security and privacy
 
-### Current authentication limitations
+<a id="current-authentication-limitations"></a>
+### ⚠️ Current authentication limitations
 
 `Auth.js` explicitly identifies the authentication implementation as **TEST-ONLY**. It uses a custom password-hashing loop based on SHA-256, a per-user salt, and a private pepper. This is **not equivalent to a modern, audited password-storage implementation** using a dedicated password KDF such as Argon2id or scrypt.
 
@@ -424,7 +476,8 @@ The code also maintains sessions and login-attempt state in Apps Script Properti
 
 **Do not claim the current system is production-secure merely because login and role checks work.** Before processing real student data, prefer an institution-approved identity provider or a thoroughly reviewed authentication architecture.
 
-### Protect the following
+<a id="protect-the-following"></a>
+### 🛡️ Protect the following
 
 - Student names, IDs, marks, and reports.
 - Real teacher and administrator details.
@@ -434,7 +487,8 @@ The code also maintains sessions and login-attempt state in Apps Script Properti
 - Spreadsheet sharing permissions and Apps Script editor permissions.
 - Backups and exported PDF reports.
 
-### Publishing safely
+<a id="publishing-safely"></a>
+### 🌐 Publishing safely
 
 Before making changes public:
 
@@ -445,11 +499,13 @@ Before making changes public:
 5. Review every callable Apps Script endpoint for server-side authorization.
 6. Keep the school-owned deployment and workbook under appropriately managed accounts.
 
-### Operational considerations
+<a id="operational-considerations"></a>
+### ⚙️ Operational considerations
 
 Google Sheets and Apps Script have execution, quota, concurrency, and storage limits. A successful small test does not establish reliability at every school size or workload. Make a backup and restore plan, test concurrent submissions, and monitor errors before wider adoption.
 
-## Testing
+<a id="testing"></a>
+## 🧪 Testing
 
 Suggested minimum test matrix:
 
@@ -470,7 +526,8 @@ Suggested minimum test matrix:
 
 Tests should use fictional records and include negative/security cases, not only successful UI interactions.
 
-## Troubleshooting
+<a id="troubleshooting"></a>
+## 🔧 Troubleshooting
 
 | Problem | Possible cause | What to check |
 |---|---|---|
@@ -486,7 +543,8 @@ Tests should use fictional records and include negative/security cases, not only
 | PDF export fails | Missing permissions, data, or export configuration | Inspect `ReportExport.gs` and execution logs |
 | Latest changes do not appear | Old deployment version | Update the web-app deployment |
 
-## Customization
+<a id="customization"></a>
+## 🎨 Customization
 
 To adapt the project to another school:
 
@@ -500,9 +558,11 @@ To adapt the project to another school:
 
 Avoid changing only the UI while leaving incompatible server-side validation or spreadsheet schemas unchanged.
 
-## Limitations and roadmap
+<a id="limitations-and-roadmap"></a>
+## 🗺️ Limitations and roadmap
 
-### Current limitations
+<a id="current-limitations"></a>
+### 🚧 Current limitations
 
 - Designed around one school and Google Sheets, not a multi-tenant database.
 - Setup depends on a specific workbook schema and correct Apps Script filenames.
@@ -510,7 +570,8 @@ Avoid changing only the UI while leaving incompatible server-side validation or 
 - Performance depends on Google Apps Script and Sheets limits.
 - No claim is made that the project has passed an independent penetration test or privacy audit.
 
-### Possible improvements
+<a id="possible-improvements"></a>
+### 💡 Possible improvements
 
 - Publish a **fully fictional sample workbook** and a verified sheet-schema reference.
 - Add automated setup/schema-validation utilities.
@@ -520,7 +581,8 @@ Avoid changing only the UI while leaving incompatible server-side validation or 
 - Improve accessibility and multilingual support where needed.
 - Add a maintained screenshots/demo section using fictional records.
 
-## Contributing
+<a id="contributing"></a>
+## 🤝 Contributing
 
 Suggestions, bug reports, and improvements are welcome through GitHub Issues and Pull Requests.
 
@@ -533,13 +595,15 @@ When reporting a bug, include:
 
 **Never attach real student records, account credentials, private spreadsheets, or session tokens to a public issue.**
 
-## License
+<a id="license"></a>
+## 📜 License
 
 **No license is currently specified in this README.** Public GitHub visibility does not automatically grant others permission to copy, modify, or redistribute the source.
 
 If the project owner has the right to license the code, add an appropriate `LICENSE` file and update this section. Confirm any school or contributor ownership requirements first.
 
-## Author
+<a id="author"></a>
+## 👩‍💻 Author
 
 Developed by **Jegathayini Thiruchchelvam**.
 
@@ -548,4 +612,4 @@ Developed by **Jegathayini Thiruchchelvam**.
 
 ---
 
-**School Marks System** — a practical experiment in simplifying academic marks management and performance analysis using Google Apps Script and Google Sheets.
+🎓 **School Marks System** — Making academic marks management, analysis, and reporting simpler, one feature at a time! 🚀
