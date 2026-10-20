@@ -10,7 +10,28 @@
 
 [![Testing](https://img.shields.io/badge/Testing-Several%20Cases%20Passed-brightgreen)](#testing)
 
-> **Project status:** I've tested the School Marks System through several functional test cases. If you'd like to use or adapt it, I recommend first trying it with the included [fictional sample workbook](fictional_marks_sheet_sample.xlsx), checking the setup and results, and letting me know about any errors through [GitHub Issues](https://github.com/Jegathayini/school_marks_system/issues). 💙
+> **Project status:** I've tested the School Marks System through several functional test cases. If you'd like to evaluate it, I recommend first trying it with the included [fictional sample workbook](fictional_marks_sheet_sample.xlsx), checking the setup and results, and letting me know about any errors through [GitHub Issues](https://github.com/Jegathayini/school_marks_system/issues). 💙
+
+<a id="live-demo"></a>
+
+## 🌐 Live Demo
+
+**Try the interactive School Marks System:** [**Launch Live Demo ↗**](https://jegathayini.github.io/school_marks_system/)
+
+The public demo lets visitors explore the interface using **fictional student records**. It runs on **GitHub Pages**, separately from the Google Apps Script application, and does **not** connect to a school's Google Sheets workbook. Demo changes are stored locally in the visitor's browser and are not shared with other visitors.
+
+### 🔑 Demo login credentials
+
+| Role | Username | Password |
+|---|---|---|
+| Administrator | `demo_admin` | `Admin@Demo2026` |
+| Teacher | `demo_teacher` | `Teacher@Demo2026` |
+
+> **Demo only:** These are public example credentials, not real school accounts. Do not enter real student details, marks, or passwords in the demo. Some production features, including account administration, are intentionally unavailable in the public version.
+
+The demo source files are in [`docs/`](docs/). The full Google Apps Script application and its setup instructions are documented below.
+
+---
 
 ### 💙 Welcome to School Marks System!
 
@@ -20,7 +41,7 @@ I built **School Marks System** to make marks entry, academic progress tracking,
 
 **👨‍💼 Administrators:** Manage teacher access, review academic performance, and generate reports.  
 
-**👩‍💻 Developers:** Explore the source, configure a fictional test workbook, and adapt the project to your needs.
+**👩‍💻 Developers:** Explore the source, configure a fictional test workbook, and suggest improvements.
 
 > 💡 **New here?** Start with [Installation and configuration](#installation-and-configuration), then check the [Google Sheets data model](#google-sheets-data-model) and [Security and privacy](#security-and-privacy).
 
@@ -30,43 +51,43 @@ I built **School Marks System** to make marks entry, academic progress tracking,
 
 ## 🧭 Table of contents
 
-1. [Overview](#overview)
+1. [Live demo](#live-demo)
 
-2. [Main features](#main-features)
+2. [Overview](#overview)
 
-3. [User roles](#user-roles)
+3. [Main features](#main-features)
 
-4. [Technology stack](#technology-stack)
+4. [User roles](#user-roles)
 
-5. [How the system works](#how-the-system-works)
+5. [Technology stack](#technology-stack)
 
-6. [Repository structure](#repository-structure)
+6. [How the system works](#how-the-system-works)
 
-7. [Requirements](#requirements)
+7. [Repository structure](#repository-structure)
 
-8. [Installation and configuration](#installation-and-configuration)
+8. [Requirements](#requirements)
 
-9. [Google Sheets data model](#google-sheets-data-model)
+9. [Installation and configuration](#installation-and-configuration)
 
-10. [Account administration](#account-administration)
+10. [Google Sheets data model](#google-sheets-data-model)
 
-11. [Typical workflows](#typical-workflows)
+11. [Account administration](#account-administration)
 
-12. [Security and privacy](#security-and-privacy)
+12. [Typical workflows](#typical-workflows)
 
-13. [Testing](#testing)
+13. [Security and privacy](#security-and-privacy)
 
-14. [Troubleshooting](#troubleshooting)
+14. [Testing](#testing)
 
-15. [Customization](#customization)
+15. [Troubleshooting](#troubleshooting)
 
-16. [Limitations and roadmap](#limitations-and-roadmap)
+16. [Customization](#customization)
 
-17. [Contributing](#contributing)
+17. [Limitations and roadmap](#limitations-and-roadmap)
 
-18. [Feedback and bug reports](#feedback-and-bug-reports)
-19. [License](#license)
+18. [Contributing](#contributing)
 
+19. [Feedback and bug reports](#feedback-and-bug-reports)
 20. [Author](#author)
 
 <a id="overview"></a>
@@ -883,25 +904,17 @@ When reporting a bug, include:
 
 **Never attach real student records, account credentials, private spreadsheets, or session tokens to a public issue.**
 
-<a id="license"></a>
-
-## 📜 License
-
-**A license has not yet been confirmed for this repository.** Public GitHub visibility does not automatically grant others permission to copy, modify, or redistribute the source.
-
-If the project owner has the right to license the code, add an appropriate `LICENSE` file and update this section. Confirm any school or contributor ownership requirements first.
-
 <a id="feedback-and-bug-reports"></a>
 
 ## 💬 Feedback, bugs and improvements
 
-I'm sharing this project so other schools, students, and developers can explore it and adapt it to their needs. **If you find an error or have an idea for improvement, please let me know!** 💙
+I'm sharing this project so other schools, students, and developers can explore the demo, learn from the implementation, and suggest improvements. **If you find an error or have an idea for improvement, please let me know!** 💙
 
 - Open a [GitHub Issue](https://github.com/Jegathayini/school_marks_system/issues) with the affected feature, steps to reproduce, and the expected versus actual result.
 
 - Please **do not attach real student marks, teacher passwords, authentication tokens, or private school documents** to public issues. Use fictional examples instead.
 
-- Contributions and suggestions are welcome, subject to the repository's licensing and school permissions.
+- Suggestions and feedback are welcome. Please ask before reusing or redistributing project code, and respect any applicable school permissions.
 
 Thank you for trying my project and helping me improve **School Marks System**! 🎓✨
 
