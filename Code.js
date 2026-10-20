@@ -96,7 +96,8 @@ const MARKS_HEADERS = [
   'SubjectGroup',
   'SubjectOption',
   'Marks',
-  'UpdatedAt'
+  'UpdatedAt',
+  'SubmittedBy'
 ];
 
 
@@ -115,7 +116,7 @@ function doGet() {
     );
 }
 
-function include(filename) {
+function include_(filename) {
 
   return HtmlService
     .createHtmlOutputFromFile(filename)
@@ -533,7 +534,7 @@ function readAllRegisters_() {
  * subjectsByGrade allows the frontend to show
  * only subjects belonging to the selected grade.
  */
-function getSetup() {
+function getSetupInternal_() {
 
   const registers = readAllRegisters_();
 
@@ -601,7 +602,7 @@ function getSetup() {
  * 1. Belong to the selected grade
  * 2. Have Yes for the selected subject
  */
-function getStudents(grade, subject) {
+function getStudentsInternal_(grade, subject) {
 
   const normalizedGrade = normalizeGrade_(
     grade
@@ -687,6 +688,20 @@ function ensureSheet_(name, headers) {
     return sheet;
   }
 
+  // Safely upgrade the existing 9-column marks sheet without touching marks.
+  // This runs under saveMarksInternal_'s script lock.
+  if (name === MARKS_SHEET && headers.length === 10) {
+    const current = sheet.getRange(1, 1, 1, 9).getDisplayValues()[0];
+    if (current.join('|') === headers.slice(0, 9).join('|')) {
+      const tenth = String(sheet.getRange(1, 10).getDisplayValue()).trim();
+      if (tenth === '') {
+        sheet.getRange(1, 10).setValue('SubmittedBy');
+      } else if (tenth !== 'SubmittedBy') {
+        throw new Error('Column J is occupied; cannot add SubmittedBy safely.');
+      }
+    }
+  }
+
   const existing = sheet
     .getRange(
       1,
@@ -726,7 +741,13 @@ function ensureSheet_(name, headers) {
  * Existing marks cannot be overwritten
  * through this function.
  */
-function saveMarks(payload) {
+function saveMarksInternal_(payload, submittedBy) {
+
+  // This identity must come from authRequire_ on the server, not the browser.
+  const submitter = String(submittedBy || '').trim().toLowerCase();
+  if (!/^[a-z][a-z0-9._-]{3,31}$/.test(submitter)) {
+    throw new Error('Unauthorized: valid submitter identity required.');
+  }
 
   if (
     !payload ||
@@ -764,7 +785,7 @@ function saveMarks(payload) {
 
     /* ========== VALIDATE STUDENTS ========== */
 
-    const enrolledStudents = getStudents(
+    const enrolledStudents = getStudentsInternal_(
       context.grade,
       subject
     );
@@ -892,6 +913,22 @@ function saveMarks(payload) {
 
       const row = storedRows[i];
 
+      // Ignore fully empty rows left behind after clearing marks.
+      // They are not stored mark records and must not create duplicate keys.
+      if (row.every(cell => cell === '' || cell === null)) {
+        continue;
+      }
+
+      // Fail safely if a partially filled row lacks identifying fields.
+      if ([row[0], row[1], row[2], row[3], row[6]].some(
+        cell => cell === '' || cell === null
+      )) {
+        throw new Error(
+          'Incomplete stored marks record at row ' + (i + 1) +
+          ' in ' + MARKS_SHEET
+        );
+      }
+
       const key = [
         row[0],
         row[1],
@@ -959,7 +996,8 @@ function saveMarks(payload) {
         group,
         subject,
         entry.mark,
-        now
+        now,
+        submitter
       ]);
 
 
@@ -996,13 +1034,13 @@ function saveMarks(payload) {
  *
  * No marks are modified.
  */
-function testConnection() {
+function testConnection_() {
 
   Logger.log(
     '===== MULTI-REGISTER CONNECTION TEST ====='
   );
 
-  const setup = getSetup();
+  const setup = getSetupInternal_();
 
   Logger.log(
     JSON.stringify(
@@ -1040,4 +1078,26 @@ function testConnection() {
   Logger.log(
     'Connection test completed successfully.'
   );
+}
+function debugMarksSheet() {
+  const ss = book_();
+  const sheet = ss.getSheetByName('Marks_Entries');
+
+  if (!sheet) {
+    Logger.log('ERROR: Marks_Entries sheet not found');
+    return;
+  }
+
+  const values = sheet.getDataRange().getValues();
+
+  const populatedRows = values.slice(1).filter(row =>
+    row.some(cell => String(cell).trim() !== '')
+  );
+
+  Logger.log('Spreadsheet name: ' + ss.getName());
+  Logger.log('Spreadsheet ID: ' + ss.getId());
+  Logger.log('Sheet name: ' + sheet.getName());
+  Logger.log('Last row: ' + sheet.getLastRow());
+  Logger.log('Populated data rows: ' + populatedRows.length);
+  Logger.log('First populated row: ' + JSON.stringify(populatedRows[0] || null));
 }

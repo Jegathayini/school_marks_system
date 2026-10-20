@@ -146,11 +146,11 @@ function analysisStudentSubjects_(
  *
  * Examples:
  *
- * getAnalysis(2026, 'Grade 06', 'Term 1')
- * getAnalysis(2026, 'Grade 10', 'Term 2')
- * getAnalysis(2026, 'Grade 12', 'Term 3')
+ * getAnalysisInternal_(2026, 'Grade 06', 'Term 1')
+ * getAnalysisInternal_(2026, 'Grade 10', 'Term 2')
+ * getAnalysisInternal_(2026, 'Grade 12', 'Term 3')
  */
-function getAnalysis(year, grade, term) {
+function getAnalysisInternal_(year, grade, term) {
 
   /* ========== VALIDATE CONTEXT ========== */
 
@@ -695,9 +695,9 @@ function getAnalysis(year, grade, term) {
 /**
  * Original Grade 06 test.
  */
-function testAnalysis() {
+function testAnalysis_() {
 
-  const result = getAnalysis(
+  const result = getAnalysisInternal_(
     2026,
     'Grade 06',
     'Term 1'
@@ -726,9 +726,9 @@ function testAnalysis() {
  *
  * Requires a Grade 11 register.
  */
-function testAnalysisGrade11() {
+function testAnalysisGrade11_() {
 
-  const result = getAnalysis(
+  const result = getAnalysisInternal_(
     2026,
     'Grade 11',
     'Term 1'
@@ -751,9 +751,9 @@ function testAnalysisGrade11() {
  *
  * Requires a Grade 12 register.
  */
-function testAnalysisGrade12() {
+function testAnalysisGrade12_() {
 
-  const result = getAnalysis(
+  const result = getAnalysisInternal_(
     2026,
     'Grade 12',
     'Term 1'
@@ -776,9 +776,9 @@ function testAnalysisGrade12() {
  *
  * Requires a Grade 13 register.
  */
-function testAnalysisGrade13() {
+function testAnalysisGrade13_() {
 
-  const result = getAnalysis(
+  const result = getAnalysisInternal_(
     2026,
     'Grade 13',
     'Term 1'

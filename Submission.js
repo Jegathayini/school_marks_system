@@ -29,12 +29,12 @@
  *   yes_()
  *
  * Analysis.gs:
- *   getAnalysis()
+ *   getAnalysisInternal_()
  *   analysisReadMarks_()
  *   analysisMarkKey_()
  *
  * Dashboard.gs:
- *   getSubmissionStatus()
+ *   getSubmissionStatusInternal_()
  */
 
 /* ========== SUBJECT VALIDATION ========== */
@@ -87,7 +87,7 @@ function submissionValidateSubject_(subject, grade) {
  *
  * Example:
  *
- * checkMarkExists(
+ * checkMarkExistsInternal_(
  *   2026,
  *   'Grade 12',
  *   'Term 1',
@@ -106,7 +106,7 @@ function submissionValidateSubject_(subject, grade) {
  *
  * This function does not change stored marks.
  */
-function checkMarkExists(
+function checkMarkExistsInternal_(
   year,
   grade,
   term,
@@ -210,7 +210,7 @@ function checkMarkExists(
  * Duplicate or invalid results remain pending
  * until the records are corrected.
  */
-function getPendingStudents(
+function getPendingStudentsInternal_(
   year,
   grade,
   term,
@@ -228,7 +228,7 @@ function getPendingStudents(
     context.grade
   );
 
-  const analysis = getAnalysis(
+  const analysis = getAnalysisInternal_(
     context.year,
     context.grade,
     context.term
@@ -319,7 +319,7 @@ function getPendingStudents(
  * - Existing results cannot be overwritten.
  * - Duplicate student IDs are rejected.
  */
-function validateMarksSubmission(payload) {
+function validateMarksSubmissionInternal_(payload) {
 
   if (
     !payload ||
@@ -569,13 +569,13 @@ function validateMarksSubmission(payload) {
  * Numeric marks and ABSENT both count
  * as entered.
  */
-function getSubmissionSummary(
+function getSubmissionSummaryInternal_(
   year,
   grade,
   term
 ) {
 
-  const status = getSubmissionStatus(
+  const status = getSubmissionStatusInternal_(
     year,
     grade,
     term
@@ -625,7 +625,7 @@ function getSubmissionSummary(
  *
  * Run with fictional student data.
  */
-function testSubmissionForGrade_(
+function testSubmissionForGrade__(
   year,
   grade,
   term
@@ -637,7 +637,7 @@ function testSubmissionForGrade_(
     term
   );
 
-  const summary = getSubmissionSummary(
+  const summary = getSubmissionSummaryInternal_(
     context.year,
     context.grade,
     context.term
@@ -679,7 +679,7 @@ function testSubmissionForGrade_(
 
     if (subjects.length > 0) {
 
-      const check = checkMarkExists(
+      const check = checkMarkExistsInternal_(
         context.year,
         context.grade,
         context.term,
@@ -703,7 +703,7 @@ function testSubmissionForGrade_(
 /**
  * Original Grade 06 test.
  */
-function testSubmission() {
+function testSubmission_() {
 
   testSubmissionForGrade_(
     2026,
@@ -715,7 +715,7 @@ function testSubmission() {
 /**
  * Grade 11 test.
  */
-function testSubmissionGrade11() {
+function testSubmissionGrade11_() {
 
   testSubmissionForGrade_(
     2026,
@@ -727,7 +727,7 @@ function testSubmissionGrade11() {
 /**
  * Grade 12 test.
  */
-function testSubmissionGrade12() {
+function testSubmissionGrade12_() {
 
   testSubmissionForGrade_(
     2026,
@@ -739,7 +739,7 @@ function testSubmissionGrade12() {
 /**
  * Grade 13 test.
  */
-function testSubmissionGrade13() {
+function testSubmissionGrade13_() {
 
   testSubmissionForGrade_(
     2026,

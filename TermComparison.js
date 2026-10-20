@@ -30,7 +30,7 @@
  * - Missing marks remain pending.
  *
  * Dependencies:
- * - getAnalysis() from Analysis.gs
+ * - getAnalysisInternal_() from Analysis.gs
  * - validateContext_() from Code.gs
  *
  * This file is READ-ONLY.
@@ -74,15 +74,15 @@ function comparisonRound_(value) {
  *
  * Examples:
  *
- * getTermComparison(2026, 'Grade 06')
- * getTermComparison(2026, 'Grade 11')
- * getTermComparison(2026, 'Grade 12')
- * getTermComparison(2026, 'Grade 13')
+ * getTermComparisonInternal_(2026, 'Grade 06')
+ * getTermComparisonInternal_(2026, 'Grade 11')
+ * getTermComparisonInternal_(2026, 'Grade 12')
+ * getTermComparisonInternal_(2026, 'Grade 13')
  *
- * getAnalysis() automatically selects the
+ * getAnalysisInternal_() automatically selects the
  * correct student register.
  */
-function getTermComparison(year, grade) {
+function getTermComparisonInternal_(year, grade) {
 
   /* ========== VALIDATE REQUEST ========== */
 
@@ -95,7 +95,7 @@ function getTermComparison(year, grade) {
   /* ========== ANALYZE ALL THREE TERMS ========== */
 
   const analyses = COMPARISON_TERMS.map(
-    term => getAnalysis(
+    term => getAnalysisInternal_(
       context.year,
       context.grade,
       term
@@ -401,13 +401,13 @@ function getTermComparison(year, grade) {
  *
  * Examples:
  *
- * getSubjectTermComparison(
+ * getSubjectTermComparisonInternal_(
  *   2026,
  *   'Grade 06',
  *   'Maths'
  * )
  *
- * getSubjectTermComparison(
+ * getSubjectTermComparisonInternal_(
  *   2026,
  *   'Grade 12',
  *   'Economics'
@@ -416,13 +416,13 @@ function getTermComparison(year, grade) {
  * Subject names are automatically obtained
  * from the selected grade's register.
  */
-function getSubjectTermComparison(
+function getSubjectTermComparisonInternal_(
   year,
   grade,
   subject
 ) {
 
-  const comparison = getTermComparison(
+  const comparison = getTermComparisonInternal_(
     year,
     grade
   );
@@ -476,12 +476,12 @@ function getSubjectTermComparison(
  *
  * No spreadsheet data is modified.
  */
-function testTermComparisonForGrade_(
+function testTermComparisonForGrade__(
   year,
   grade
 ) {
 
-  const result = getTermComparison(
+  const result = getTermComparisonInternal_(
     year,
     grade
   );
@@ -556,7 +556,7 @@ function testTermComparisonForGrade_(
 /**
  * Original Grade 06 test.
  */
-function testTermComparison() {
+function testTermComparison_() {
 
   testTermComparisonForGrade_(
     2026,
@@ -567,7 +567,7 @@ function testTermComparison() {
 /**
  * Grade 11 test.
  */
-function testTermComparisonGrade11() {
+function testTermComparisonGrade11_() {
 
   testTermComparisonForGrade_(
     2026,
@@ -578,7 +578,7 @@ function testTermComparisonGrade11() {
 /**
  * Grade 12 test.
  */
-function testTermComparisonGrade12() {
+function testTermComparisonGrade12_() {
 
   testTermComparisonForGrade_(
     2026,
@@ -589,7 +589,7 @@ function testTermComparisonGrade12() {
 /**
  * Grade 13 test.
  */
-function testTermComparisonGrade13() {
+function testTermComparisonGrade13_() {
 
   testTermComparisonForGrade_(
     2026,

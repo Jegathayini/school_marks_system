@@ -1,13 +1,13 @@
 /**
  * ReportExport.gs — School Academic Management
  * Keep the seven existing files. Add this as a NEW Apps Script file.
- * Run exportStart(year), then repeatedly exportNext(jobId) from Index.html.
+ * Run exportStartInternal_(year), then repeatedly exportNextInternal_(jobId) from Index.html.
  * Reports are read-only; only temporary Google Drive documents/files are created.
  * IMPORTANT: Restrict web-app access to authorized school staff before using real data.
  */
 const EXPORT_ROOT_NAME = 'School Academic Reports';
 const EXPORT_JOB_PREFIX = 'academic_export_';
-const EXPORT_BATCH_SIZE = 2; // Conservative: student reports call getAnalysis() three times.
+const EXPORT_BATCH_SIZE = 2; // Conservative: student reports call getAnalysisInternal_() three times.
 
 function exportRoot_() {
   const folders = DriveApp.getFoldersByName(EXPORT_ROOT_NAME);
@@ -27,7 +27,7 @@ function exportYear_(value) {
   if (!Number.isInteger(year) || year < 2020 || year > 2100) throw new Error('Invalid academic year.');
   return year;
 }
-function exportStart(year) {
+function exportStartInternal_(year) {
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
@@ -37,7 +37,7 @@ function exportStart(year) {
     for (const grade of grades) {
       for (const term of ['Term 1', 'Term 2', 'Term 3']) tasks.push({type:'subject', grade, term});
       tasks.push({type:'term', grade});
-      for (const student of getReportStudents(grade)) tasks.push({type:'student', grade, studentId:student.id});
+      for (const student of getReportStudentsInternal_(grade)) tasks.push({type:'student', grade, studentId:student.id});
     }
     if (!tasks.length) throw new Error('No report tasks found.');
     const id = Utilities.getUuid();
@@ -68,7 +68,7 @@ function exportBuildDocument_(task, year) {
     body.appendParagraph(title).setHeading(DocumentApp.ParagraphHeading.HEADING2);
     exportParagraph_(body, 'Academic year: ' + year);
     if (task.type === 'subject') {
-      const a = getAnalysis(year, task.grade, task.term);
+      const a = getAnalysisInternal_(year, task.grade, task.term);
       exportParagraph_(body, 'Students: ' + a.studentCount + ' | Complete: ' + a.completeCount + ' | Pending: ' + a.pendingCount);
       exportParagraph_(body, 'Class average: ' + exportCell_(a.classAverage));
       body.appendParagraph('Subject performance').setHeading(DocumentApp.ParagraphHeading.HEADING3);
@@ -79,7 +79,7 @@ function exportBuildDocument_(task, year) {
         a.students.map(s => [s.id,s.name,s.entered+'/'+s.expected,s.totalRecorded,s.average,s.complete?'Complete':'Pending'])));
       exportParagraph_(body, 'Duplicate warnings: ' + a.warnings.duplicates.length + '; invalid/unmatched: ' + a.warnings.invalidOrUnmatched.length);
     } else if (task.type === 'term') {
-      const c = getTermComparison(year, task.grade);
+      const c = getTermComparisonInternal_(year, task.grade);
       exportParagraph_(body, 'Registered students: ' + c.studentCount);
       exportTable_(body, [['Term','Class average','Entered','Expected','Absent','Missing','Completion %']].concat(
         c.terms.map(t => [t.term,t.classAverage,t.entered,t.expected,t.absent,t.missing,t.completionPercentage])));
@@ -88,7 +88,7 @@ function exportBuildDocument_(task, year) {
         c.subjects.map(s => [s.subject].concat(s.terms.map(t => t.average)))));
       exportParagraph_(body, 'Comparisons marked incomplete are not final performance changes.');
     } else {
-      const r = getStudentReport(year, task.grade, task.studentId);
+      const r = getStudentReportInternal_(year, task.grade, task.studentId);
       exportParagraph_(body, 'Student: ' + r.student.name + ' | ID: ' + r.student.id);
       exportTable_(body, [['Term','Recorded','Absent','Average','Status']].concat(
         r.terms.map(t => [t.term,t.entered+'/'+t.expected,t.absent,t.average,t.complete?'Complete':'Pending'])));
@@ -117,7 +117,7 @@ function exportTaskName_(task) {
   if (task.type === 'term') return '2. Termwise Analysis/' + exportSafeName_(task.grade) + '.pdf';
   return '3. Student Performance Reports/' + exportSafeName_(task.grade) + '/' + exportSafeName_(task.studentId) + '.pdf';
 }
-function exportNext(jobId) {
+function exportNextInternal_(jobId) {
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
@@ -144,7 +144,7 @@ function exportNext(jobId) {
     return {status:'running',done:job.index,total:job.tasks.length,errors:job.errors};
   } finally { lock.releaseLock(); }
 }
-function exportFinish(jobId) {
+function exportFinishInternal_(jobId) {
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {

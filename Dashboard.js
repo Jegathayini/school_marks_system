@@ -18,7 +18,7 @@
  * 6. Grade-specific dashboard data
  *
  * Dependencies:
- * - getAnalysis() from Analysis.gs
+ * - getAnalysisInternal_() from Analysis.gs
  * - validateContext_() from Code.gs
  *
  * IMPORTANT:
@@ -249,13 +249,13 @@ function buildSubmissionStatus_(analysis) {
  *
  * Examples:
  *
- * getSubmissionStatus(
+ * getSubmissionStatusInternal_(
  *   2026,
  *   'Grade 06',
  *   'Term 1'
  * )
  *
- * getSubmissionStatus(
+ * getSubmissionStatusInternal_(
  *   2026,
  *   'Grade 12',
  *   'Term 1'
@@ -274,7 +274,7 @@ function buildSubmissionStatus_(analysis) {
  *
  * ABSENT counts as entered.
  */
-function getSubmissionStatus(
+function getSubmissionStatusInternal_(
   year,
   grade,
   term
@@ -286,7 +286,7 @@ function getSubmissionStatus(
     term
   );
 
-  const analysis = getAnalysis(
+  const analysis = getAnalysisInternal_(
     context.year,
     context.grade,
     context.term
@@ -309,7 +309,7 @@ function getSubmissionStatus(
  *
  * google.script.run
  *   .withSuccessHandler(...)
- *   .getDashboardData(
+ *   .getDashboardDataInternal_(
  *     year,
  *     grade,
  *     term
@@ -322,7 +322,7 @@ function getSubmissionStatus(
  *   submission: {...}
  * }
  */
-function getDashboardData(
+function getDashboardDataInternal_(
   year,
   grade,
   term
@@ -336,7 +336,7 @@ function getDashboardData(
 
   /* ========== ACADEMIC ANALYSIS ========== */
 
-  const analysis = getAnalysis(
+  const analysis = getAnalysisInternal_(
     context.year,
     context.grade,
     context.term
@@ -367,13 +367,13 @@ function getDashboardData(
  *
  * No marks are modified.
  */
-function testDashboardForGrade_(
+function testDashboardForGrade__(
   year,
   grade,
   term
 ) {
 
-  const result = getDashboardData(
+  const result = getDashboardDataInternal_(
     year,
     grade,
     term
@@ -449,7 +449,7 @@ function testDashboardForGrade_(
 /**
  * Original Grade 06 test.
  */
-function testDashboard() {
+function testDashboard_() {
 
   testDashboardForGrade_(
     2026,
@@ -461,7 +461,7 @@ function testDashboard() {
 /**
  * Grade 11 test.
  */
-function testDashboardGrade11() {
+function testDashboardGrade11_() {
 
   testDashboardForGrade_(
     2026,
@@ -473,7 +473,7 @@ function testDashboardGrade11() {
 /**
  * Grade 12 test.
  */
-function testDashboardGrade12() {
+function testDashboardGrade12_() {
 
   testDashboardForGrade_(
     2026,
@@ -485,7 +485,7 @@ function testDashboardGrade12() {
 /**
  * Grade 13 test.
  */
-function testDashboardGrade13() {
+function testDashboardGrade13_() {
 
   testDashboardForGrade_(
     2026,

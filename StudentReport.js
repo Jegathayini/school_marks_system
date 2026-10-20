@@ -36,7 +36,7 @@
  *   yes_()
  *
  * Dependency from Analysis.gs:
- *   getAnalysis()
+ *   getAnalysisInternal_()
  */
 
 /* ========== HELPER FUNCTIONS ========== */
@@ -87,14 +87,14 @@ function studentReportDisplayMark_(mark) {
  *
  * Examples:
  *
- * getReportStudents('Grade 06')
- * getReportStudents('Grade 11')
- * getReportStudents('Grade 12')
- * getReportStudents('Grade 13')
+ * getReportStudentsInternal_('Grade 06')
+ * getReportStudentsInternal_('Grade 11')
+ * getReportStudentsInternal_('Grade 12')
+ * getReportStudentsInternal_('Grade 13')
  *
  * Automatically reads the correct register.
  */
-function getReportStudents(grade) {
+function getReportStudentsInternal_(grade) {
 
   const selectedGrade = normalizeGrade_(grade);
 
@@ -138,13 +138,13 @@ function getReportStudents(grade) {
  *
  * Examples:
  *
- * getStudentReport(
+ * getStudentReportInternal_(
  *   2026,
  *   'Grade 06',
  *   'ST001'
  * )
  *
- * getStudentReport(
+ * getStudentReportInternal_(
  *   2026,
  *   'Grade 12',
  *   'AL001'
@@ -153,7 +153,7 @@ function getReportStudents(grade) {
  * Maintains compatibility with the existing
  * renderStudentReport() frontend function.
  */
-function getStudentReport(
+function getStudentReportInternal_(
   year,
   grade,
   studentId
@@ -249,7 +249,7 @@ function getStudentReport(
      * - Final term averages
      */
 
-    const analysis = getAnalysis(
+    const analysis = getAnalysisInternal_(
       context.year,
       context.grade,
       termName
@@ -521,7 +521,7 @@ function getStudentReport(
  *
  * No spreadsheet data is modified.
  */
-function testStudentReportsForGrade_(
+function testStudentReportsForGrade__(
   year,
   grade
 ) {
@@ -540,7 +540,7 @@ function testStudentReportsForGrade_(
     'Grade: ' + context.grade
   );
 
-  const students = getReportStudents(
+  const students = getReportStudentsInternal_(
     context.grade
   );
 
@@ -568,7 +568,7 @@ function testStudentReportsForGrade_(
     ')'
   );
 
-  const report = getStudentReport(
+  const report = getStudentReportInternal_(
     context.year,
     context.grade,
     selectedStudent.id
@@ -634,7 +634,7 @@ function testStudentReportsForGrade_(
 /**
  * Original Grade 06 test.
  */
-function testStudentReports() {
+function testStudentReports_() {
 
   testStudentReportsForGrade_(
     2026,
@@ -645,7 +645,7 @@ function testStudentReports() {
 /**
  * Grade 11 test.
  */
-function testStudentReportsGrade11() {
+function testStudentReportsGrade11_() {
 
   testStudentReportsForGrade_(
     2026,
@@ -656,7 +656,7 @@ function testStudentReportsGrade11() {
 /**
  * Grade 12 test.
  */
-function testStudentReportsGrade12() {
+function testStudentReportsGrade12_() {
 
   testStudentReportsForGrade_(
     2026,
@@ -667,7 +667,7 @@ function testStudentReportsGrade12() {
 /**
  * Grade 13 test.
  */
-function testStudentReportsGrade13() {
+function testStudentReportsGrade13_() {
 
   testStudentReportsForGrade_(
     2026,

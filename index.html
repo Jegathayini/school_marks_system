@@ -255,7 +255,7 @@ tr.absent-row input[type="number"] { background: #edf0f4; color: #64748b; }
 }
 @media print {
   header, nav, .back, .toolbar, .print-hide,
-  #teacherView, #analysisMenu, #subjectView, #termView, #exportView {
+  #teacherView, #analysisMenu, #subjectView, #termView, #exportView, #accountsView, #passwordGate {
     display: none !important;
   }
   #studentView, #reportContent { display: block !important; }
@@ -267,6 +267,20 @@ tr.absent-row input[type="number"] { background: #edf0f4; color: #64748b; }
 </head>
 
 <body>
+<div id="authGate" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#f2f5fa"><form id="authForm" style="width:min(420px,100%);background:white;border:1px solid #e1e8f2;border-radius:17px;padding:30px;box-shadow:0 10px 30px #20385b0a"><h2>School Academic Management</h2><p>Authorized testing accounts only</p><label for="authUsername">Username</label><input id="authUsername" autocomplete="username" required><label for="authPassword" style="margin-top:14px">Password</label><input id="authPassword" type="password" autocomplete="current-password" required><button class="primary" id="authLoginButton" style="width:100%;margin-top:20px" type="submit">Sign in</button><p id="authError" role="alert" style="color:#a32734"></p></form></div>
+<div id="passwordGate" class="hidden" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#f2f5fa">
+  <form id="passwordForm" class="card" style="width:min(450px,100%)">
+    <h2>Change your temporary password</h2>
+    <p>You must set a new password before using the school portal.</p>
+    <label for="currentPassword">Current / temporary password</label><input id="currentPassword" type="password" autocomplete="current-password" required>
+    <label for="newPassword" style="margin-top:14px">New password (at least 14 characters)</label><input id="newPassword" type="password" autocomplete="new-password" minlength="14" maxlength="256" required>
+    <label for="confirmPassword" style="margin-top:14px">Confirm new password</label><input id="confirmPassword" type="password" autocomplete="new-password" minlength="14" maxlength="256" required>
+    <button id="changePasswordButton" class="primary" type="submit" style="width:100%;margin-top:18px">Change password</button>
+    <p id="passwordError" role="alert" style="color:#a32734"></p>
+    <button type="button" class="secondary" onclick="authSignOut()">Sign out</button>
+  </form>
+</div>
+<div id="protectedApp" class="hidden">
 <header>
   <div>
     <strong>School Academic Management</strong>
@@ -277,12 +291,36 @@ tr.absent-row input[type="number"] { background: #edf0f4; color: #64748b; }
     <button id="marksNav" class="active" type="button" onclick="showMarks()">Marks Entry</button>
     <button id="analysisNav" type="button" onclick="showAnalysis()">Marks Analysis</button>
     <button id="exportNav" type="button" onclick="showExport()">Save All Reports</button>
+    <button id="accountsNav" class="hidden" type="button" onclick="showAccounts()">Manage Teachers</button>
   </nav>
-  <span id="mode">Connecting...</span>
+  <span id="mode">Connecting...</span><button type="button" class="secondary" onclick="authSignOut()">Sign out</button>
 </header>
 
 <main>
 
+<!-- ADMINISTRATOR TEACHER ACCOUNT MANAGEMENT -->
+<section id="accountsView" class="hidden">
+  <div class="eyebrow">Administrator workspace</div>
+  <h1>Manage Teachers</h1>
+  <p>Create individual teacher logins, reset temporary passwords, or activate and deactivate accounts.</p>
+  <div class="card">
+    <h2>Add teacher</h2>
+    <form id="addTeacherForm">
+      <div class="grid">
+        <div><label for="teacherName">Teacher name</label><input id="teacherName" required minlength="2" maxlength="100"></div>
+        <div><label for="teacherUsername">Username</label><input id="teacherUsername" required minlength="4" maxlength="32" pattern="[a-zA-Z][a-zA-Z0-9._-]{3,31}" autocomplete="off"></div>
+        <div><label for="teacherEmail">Email (optional)</label><input id="teacherEmail" type="email" maxlength="254"></div>
+      </div>
+      <div class="actions"><span></span><button id="addTeacherButton" type="submit" class="primary">Create teacher account</button></div>
+    </form>
+    <p id="accountMessage" class="muted" role="status"></p>
+    <div id="issuedPassword" class="message hidden" role="status" style="overflow-wrap:anywhere"></div>
+  </div>
+  <div class="card">
+    <div class="actions" style="align-items:center"><h2>Teacher accounts</h2><button class="secondary" type="button" onclick="loadTeacherAccounts()">Refresh</button></div>
+    <div class="tablewrap"><table><thead><tr><th>Name</th><th>Username</th><th>Status</th><th>Actions</th></tr></thead><tbody id="teacherAccountRows"></tbody></table></div>
+  </div>
+</section>
 <!-- TEACHER MARKS ENTRY -->
 <section id="teacherView">
   <div class="eyebrow">Teacher Portal</div>
@@ -499,6 +537,7 @@ tr.absent-row input[type="number"] { background: #edf0f4; color: #64748b; }
 </section>
 
 </main>
+</div>
 
 <script>
 "use strict";
@@ -506,6 +545,130 @@ tr.absent-row input[type="number"] { background: #edf0f4; color: #64748b; }
 /* ========== GENERAL HELPERS ========== */
 
 const el = id => document.getElementById(id);
+let authToken = '';
+let authRole = '';
+function authSignOut() {
+  const token=authToken; authToken=''; authRole='';
+  sessionStorage.removeItem('school_test_session');
+  el('protectedApp').classList.add('hidden');
+  el('passwordGate').classList.add('hidden');
+  el('authGate').classList.remove('hidden');
+  el('authPassword').value='';
+  el('currentPassword').value=''; el('newPassword').value=''; el('confirmPassword').value='';
+  el('issuedPassword').replaceChildren(); el('issuedPassword').classList.add('hidden');
+  if (token && live) google.script.run.authLogout(token);
+}
+function authEnter(data) {
+  authToken=data.token; authRole=data.role;
+  // Session storage contains only a short-lived token, not passwords.
+  sessionStorage.setItem('school_test_session',JSON.stringify({token:data.token,role:data.role,name:data.name}));
+  el('authGate').classList.add('hidden');
+  el('protectedApp').classList.add('hidden');
+  el('passwordGate').classList.add('hidden');
+  if (data.mustChangePassword) {
+    el('passwordGate').classList.remove('hidden');
+    return;
+  }
+  el('protectedApp').classList.remove('hidden');
+  el('analysisNav').classList.toggle('hidden',authRole!=='ADMIN');
+  el('exportNav').classList.toggle('hidden',authRole!=='ADMIN');
+  el('accountsNav').classList.toggle('hidden',authRole!=='ADMIN');
+  showMarks();
+  init();
+}
+function authRestore() {
+  let saved;
+  try {saved=JSON.parse(sessionStorage.getItem('school_test_session')||'null');}catch(e){}
+  if (!saved || !saved.token || !live) return;
+  google.script.run.withSuccessHandler(user=>authEnter({...saved,role:user.role,name:user.name,mustChangePassword:user.mustChangePassword}))
+    .withFailureHandler(()=>authSignOut()).authSession(saved.token);
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  el('authForm').addEventListener('submit',event=>{
+    event.preventDefault();el('authError').textContent='';
+    el('authLoginButton').disabled=true;
+    google.script.run.withSuccessHandler(data=>{el('authLoginButton').disabled=false;el('authPassword').value='';authEnter(data);})
+      .withFailureHandler(err=>{el('authLoginButton').disabled=false;el('authError').textContent=err.message;})
+      .authLogin(el('authUsername').value,el('authPassword').value);
+  });
+  el('passwordForm').addEventListener('submit',event=>{
+    event.preventDefault();
+    const current=el('currentPassword').value, next=el('newPassword').value;
+    el('passwordError').textContent='';
+    if(next!==el('confirmPassword').value){el('passwordError').textContent='Passwords do not match.';return;}
+    el('changePasswordButton').disabled=true;
+    google.script.run.withSuccessHandler(()=>{
+      el('changePasswordButton').disabled=false;
+      authSignOut();
+      el('authError').textContent='Password changed. Please sign in with your new password.';
+    }).withFailureHandler(err=>{
+      el('changePasswordButton').disabled=false;
+      el('passwordError').textContent=err.message;
+    }).authChangePassword(authToken,current,next);
+  });
+  el('addTeacherForm').addEventListener('submit',event=>{
+    event.preventDefault();
+    if(authRole!=='ADMIN') return;
+    el('addTeacherButton').disabled=true;
+    el('issuedPassword').replaceChildren();el('issuedPassword').classList.add('hidden');
+    message('accountMessage','Creating teacher...');
+    google.script.run.withSuccessHandler(result=>{
+      el('addTeacherButton').disabled=false;
+      el('addTeacherForm').reset();
+      showIssuedPassword(result.username,result.temporaryPassword);
+      message('accountMessage','Teacher account created. Share the temporary password securely.');
+      loadTeacherAccounts();
+    }).withFailureHandler(err=>{
+      el('addTeacherButton').disabled=false;
+      message('accountMessage',err.message,true);
+    }).adminCreateTeacher(el('teacherName').value,el('teacherUsername').value,el('teacherEmail').value,authToken);
+  });
+  authRestore();
+});
+function showIssuedPassword(username,password) {
+  const host=el('issuedPassword');host.replaceChildren();host.classList.remove('hidden');
+  host.append(node('strong','Temporary password for '+username+' (shown only now):'),node('p',password));
+  const copy=node('button','Copy password','secondary');copy.type='button';
+  copy.onclick=()=>navigator.clipboard.writeText(password).catch(()=>alert('Select and copy the displayed password.'));
+  host.append(copy,node('p','Store it securely and give it directly to the teacher. They must change it on first login.'));
+}
+function showAccounts() {
+  if(authRole!=='ADMIN') return;
+  showOnly('accountsView');
+  loadTeacherAccounts();
+}
+function loadTeacherAccounts() {
+  if(authRole!=='ADMIN') return;
+  message('accountMessage','Loading teacher accounts...');
+  google.script.run.withSuccessHandler(list=>{
+    const host=el('teacherAccountRows');host.replaceChildren();
+    for(const teacher of list){
+      const tr=node('tr');
+      tr.append(node('td',teacher.name),node('td',teacher.username),node('td',teacher.active?'Active':'Inactive'));
+      const actions=node('td');
+      const reset=node('button','Reset password','secondary');reset.type='button';
+      reset.onclick=()=>{
+        if(!confirm('Reset password for '+teacher.username+'? Their existing sessions will stop working.'))return;
+        reset.disabled=true;
+        google.script.run.withSuccessHandler(result=>{
+          reset.disabled=false;showIssuedPassword(result.username,result.temporaryPassword);
+          message('accountMessage','Password reset for '+result.username+'.');
+        }).withFailureHandler(err=>{reset.disabled=false;message('accountMessage',err.message,true);})
+          .adminResetTeacherPassword(teacher.username,authToken);
+      };
+      const toggle=node('button',teacher.active?'Deactivate':'Activate','secondary');toggle.type='button';
+      toggle.onclick=()=>{
+        if(!confirm((teacher.active?'Deactivate ':'Activate ')+teacher.username+'?'))return;
+        toggle.disabled=true;
+        google.script.run.withSuccessHandler(()=>loadTeacherAccounts())
+          .withFailureHandler(err=>{toggle.disabled=false;message('accountMessage',err.message,true);})
+          .adminSetTeacherActive(teacher.username,!teacher.active,authToken);
+      };
+      actions.append(reset,' ',toggle);tr.append(actions);host.append(tr);
+    }
+    message('accountMessage',list.length+' teacher account(s) loaded.');
+  }).withFailureHandler(err=>message('accountMessage',err.message,true)).adminListTeachers(authToken);
+}
 const live = typeof google !== "undefined" &&
              google.script && google.script.run;
 
@@ -536,17 +699,19 @@ function message(id, text, error = false) {
 }
 
 function showOnly(id) {
-  ["teacherView", "analysisMenu", "subjectView", "termView", "studentView", "exportView"]
+  if (authRole!=="ADMIN" && id!=="teacherView") return;
+  ["teacherView", "analysisMenu", "subjectView", "termView", "studentView", "exportView", "accountsView"]
     .forEach(name => el(name).classList.toggle("hidden", name !== id));
 
   el("marksNav").classList.toggle("active", id === "teacherView");
-  el("analysisNav").classList.toggle("active", id !== "teacherView" && id !== "exportView");
+  el("analysisNav").classList.toggle("active", id !== "teacherView" && id !== "exportView" && id !== "accountsView");
   el("exportNav").classList.toggle("active", id === "exportView");
+  el("accountsNav").classList.toggle("active", id === "accountsView");
 }
 
 function showMarks() { showOnly("teacherView"); }
-function showAnalysis() { showOnly("analysisMenu"); }
-function showExport() { showOnly("exportView"); el("exportYear").value = el("year").value; }
+function showAnalysis() { if(authRole!=="ADMIN") return; showOnly("analysisMenu"); }
+function showExport() { if(authRole!=="ADMIN") return; showOnly("exportView"); el("exportYear").value = el("year").value; }
 
 function copyGrades(targetId) {
   const target = el(targetId);
@@ -604,7 +769,7 @@ function init() {
       el("mode").textContent = "Connection error";
       message("trackerMessage", err.message, true);
     })
-    .getSetup();
+    .getSetup(authToken);
 }
 
 /* ========== TEACHER MARKS ENTRY ========== */
@@ -705,7 +870,7 @@ function refreshSubmissionStatus() {
       if (request !== trackerRequest) return;
       message("trackerMessage", err.message, true);
     })
-    .getSubmissionStatus(year, grade, term);
+    .getSubmissionStatus(year, grade, term, authToken);
 }
 
 function loadStudents() {
@@ -809,12 +974,12 @@ function loadStudents() {
         .withFailureHandler(err => {
           if (request === studentLoadRequest) alert(err.message);
         })
-        .getStudents(grade, selectedSubject);
+        .getStudents(grade, selectedSubject, authToken);
     })
     .withFailureHandler(err => {
       if (request === studentLoadRequest) alert(err.message);
     })
-    .getSubmissionStatus(year, grade, term);
+    .getSubmissionStatus(year, grade, term, authToken);
 }
 
 function submitMarks() {
@@ -884,7 +1049,7 @@ function submitMarks() {
     .saveMarks({
       ...savedContext,
       marks: entered
-    });
+    }, authToken);
 }
 
 /* ========== SUBJECT ANALYSIS ========== */
@@ -915,7 +1080,7 @@ function loadAnalysis() {
     .getDashboardData(
       el("analysisYear").value,
       el("analysisGrade").value,
-      el("analysisTerm").value
+      el("analysisTerm").value, authToken
     );
 }
 
@@ -1026,7 +1191,7 @@ function loadTermComparison() {
       if (request !== termRequest) return;
       message("termMessage", err.message, true);
     })
-    .getTermComparison(el("termYear").value, el("termGrade").value);
+    .getTermComparison(el("termYear").value, el("termGrade").value, authToken);
 }
 
 function renderTermComparison(data) {
@@ -1118,7 +1283,7 @@ function loadReportStudents() {
       if (request !== studentListRequest) return;
       message("reportMessage", err.message, true);
     })
-    .getReportStudents(el("reportGrade").value);
+    .getReportStudents(el("reportGrade").value, authToken);
 }
 
 function loadStudentReport() {
@@ -1153,7 +1318,7 @@ function loadStudentReport() {
     .getStudentReport(
       el("reportYear").value,
       el("reportGrade").value,
-      id
+      id, authToken
     );
 }
 
@@ -1346,7 +1511,7 @@ let exportRunning = false;
 const exportSleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 function exportCallOnce(name, ...args) {
   return new Promise((resolve, reject) => {
-    google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)[name](...args);
+    google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)[name](...args, authToken);
   });
 }
 async function exportCall(name, ...args) {
@@ -1812,7 +1977,7 @@ el("reportYear").addEventListener("change", () => {
 
 /* ========== START APPLICATION ========== */
 
-init();
+// Application initialization occurs only after a valid login.
 
 </script>
 </body>
