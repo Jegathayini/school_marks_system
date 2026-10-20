@@ -10,11 +10,11 @@
 
 [![Testing](https://img.shields.io/badge/Testing-Several%20Cases%20Passed-brightgreen)](#testing)
 
-> **Project status:** The School Marks System has passed several functional test cases. Schools and developers are encouraged to first try the application with the included [fictional sample workbook](fictional_marks_sheet_sample.xlsx), verify the setup and results, and report any errors through [GitHub Issues](https://github.com/Jegathayini/school_marks_system/issues). 💙
+> **Project status:** I've tested the School Marks System through several functional test cases. If you'd like to use or adapt it, I recommend first trying it with the included [fictional sample workbook](fictional_marks_sheet_sample.xlsx), checking the setup and results, and letting me know about any errors through [GitHub Issues](https://github.com/Jegathayini/school_marks_system/issues). 💙
 
 ### 💙 Welcome to School Marks System!
 
-Managing student marks, comparing academic progress, and preparing reports should be easier for teachers and school administrators. **School Marks System** brings those tasks together in one browser-based application. 🏫
+I built **School Marks System** to make marks entry, academic progress tracking, and report preparation easier for teachers and school administrators. It brings these everyday tasks together in one browser-based application. 🏫
 
 **👩‍🏫 Teachers:** Enter and validate marks.  
 
@@ -176,21 +176,13 @@ The project is designed around a **single-school deployment** and can be adapted
 ## 👥 User roles
 
 | Capability | Teacher | Administrator |
-
 |---|:---:|:---:|
-
 | Sign in | Yes | Yes |
-
 | Change own password | Yes | Yes |
-
 | Submit permitted marks | Yes | Yes |
-
 | View teacher submission-related information | As authorized | Yes |
-
 | School-wide analysis | No | Yes |
-
 | Student reports and export | No | Yes |
-
 | Create/reset/deactivate teacher accounts | No | Yes |
 
 Actual access is enforced by server-side checks in the Apps Script functions, not only by hiding interface buttons.
@@ -200,19 +192,12 @@ Actual access is enforced by server-side checks in the Apps Script functions, no
 ## 🛠️ Technology stack
 
 | Layer | Technology | Purpose |
-
 |---|---|---|
-
 | Frontend | HTML, CSS, JavaScript | Interactive browser interface |
-
 | Backend | Google Apps Script | Validation, authorization, academic processing, exports |
-
 | Data storage | Google Sheets | Registers, marks, and account metadata |
-
 | Hosting | Apps Script Web App | Serves the application |
-
 | Configuration | Apps Script project settings and Script Properties | Runtime settings and private authentication state |
-
 | Source control | Git and GitHub | Version history and code distribution |
 
 No conventional Node.js server or relational database is required by the current architecture.
@@ -382,27 +367,16 @@ The application relies on specific sheet names, columns, and data conventions. *
 Create Apps Script script files and paste the corresponding source:
 
 | GitHub file | Apps Script file |
-
 |---|---|
-
 | `Code.js` | `Code.gs` |
-
 | `Auth.js` | `Auth.gs` |
-
 | `AccessAPI.js` | `AccessAPI.gs` |
-
 | `AccountManagement.js` | `AccountManagement.gs` |
-
 | `Analysis.js` | `Analysis.gs` |
-
 | `Dashboard.js` | `Dashboard.gs` |
-
 | `Submission.js` | `Submission.gs` |
-
 | `TermComparison.js` | `TermComparison.gs` |
-
 | `StudentReport.js` | `StudentReport.gs` |
-
 | `ReportExport.js` | `ReportExport.gs` |
 
 **Do not** put these files into separate Apps Script projects: the functions are intended to call one another within a single project.
@@ -492,17 +466,11 @@ For a local, fictional-data test, an authorized project editor can call this hel
 For example, the arguments represent:
 
 | Argument | Meaning |
-
 |---|---|
-
 | `username` | Unique login name |
-
 | `password` | Unique initial password, at least 14 characters |
-
 | `name` | Display name |
-
 | `role` | `ADMIN` or `TEACHER` |
-
 | `email` | Optional account email metadata |
 
 **Caution:** Editor-level access to the Apps Script project or underlying spreadsheet is privileged. Only trusted administrators should have it.
@@ -566,13 +534,9 @@ For any school deployment, first obtain approval for the identity model, data pr
 The system separates grade-register data into the following grade ranges:
 
 | Group | Grades |
-
 |---|---|
-
 | Junior grades | 06–09 |
-
 | Secondary grades | 10–11 |
-
 | Senior grades | 12–13 |
 
 These registers are the source of student/subject information used by marks entry and validation. The exact tab names and column positions are defined by the application's code and must be checked before importing data.
@@ -584,41 +548,27 @@ These registers are the source of student/subject information used by marks entr
 **Download the sample:** [`📥 fictional_marks_sheet_sample.xlsx`](fictional_marks_sheet_sample.xlsx) (included as a separate file in the repository). The workbook uses **fictional students only**. Upload it to Google Drive, open with Google Sheets, and copy its three register tabs into the **same spreadsheet** that contains the Apps Script project. Keep the sheet tab names exactly as shown below, unless you also update `REGISTER_CONFIG` in `Code.js`.
 
 | Register tab (exact name) | Grades included |
-
 |---|---|
-
 | `Grade 06 to 09` | Grade 06, Grade 07, Grade 08, Grade 09 |
-
 | `Grade 10 to 11` | Grade 10, Grade 11 |
-
 | `Grade 12 to 13` | Grade 12, Grade 13 |
 
 **Every register uses the same layout:**
 
 | Column | Row 1 / Row 2 | Enter from row 3 onward | Important rule |
-
 |---|---|---|---|
-
 | **A** | `Student ID` | Unique ID, e.g. `S06001` | Do not repeat a student ID within the same register. Keep IDs stable across terms. |
-
 | **B** | `Student Name` | Full student name | Must not be blank for an enrolled student. |
-
 | **C** | `Grade` | `Grade 06`, `Grade 07`, etc. | Use the grade naming format expected by the application. |
-
 | **D onward** | Subject headings in row 1 and/or subject-option headings in row 2 | `Yes` if enrolled in that subject; `No` if not | The app uses these selections to decide which students appear for a subject. |
 
 #### 📋 Example — the first five columns
 
 | Sheet row | A: Student ID | B: Student Name | C: Grade | D: Mathematics | E: Science |
-
 |---|---|---|---|---|---|
-
 | **1** | Student ID | Student Name | Grade | Mathematics | Science |
-
 | **2** | **(blank)** | **(blank)** | **(blank)** | **(blank)** | **(blank)** |
-
 | **3** | S06001 | Sample Student A | Grade 06 | Yes | Yes |
-
 | **4** | S06002 | Sample Student B | Grade 06 | Yes | No |
 
 **Why two header rows?** The code reads **row 1** as the main heading and **row 2** as the optional subject/option heading. For subject columns, the parser may use the row-2 heading when present and otherwise the row-1 heading. The first three columns remain student identifiers even when row 2 contains subject-option labels. In the provided register examples, row 2 may contain options such as `Hinduism`, `RC`, `NonRC` in columns A–C, and other option names under later subject columns. Keep the sample column positions unchanged. Do **not** duplicate the same effective subject heading across multiple columns in one register. The words `Religion` and `Aesthetic` alone are group labels, not selectable subject names in this parser.
@@ -656,23 +606,14 @@ The `Code.js` version used for this guide declares the following initial heading
 ### 🔹 C. `Staff_Access`
 
 | Column | Header | Description |
-
 |---|---|---|
-
 | A | `Email` | Account email metadata |
-
 | B | `Name` | Display name |
-
 | C | `Role` | `ADMIN` or `TEACHER` |
-
 | D | `Active` | Account activation state |
-
 | E | `GoogleSubject` | Reserved/compatibility field |
-
 | F | `Username` | Login username |
-
 | G | `PasswordSalt` | Random per-account salt |
-
 | H | `PasswordHash` | Derived password hash |
 
 Passwords should **never** be stored as plaintext in this sheet. Password hashes and salts are also sensitive account records and must not be committed to GitHub or made public.
@@ -832,31 +773,18 @@ Google Sheets and Apps Script have execution, quota, concurrency, and storage li
 Suggested minimum test matrix:
 
 | Area | Test |
-
 |---|---|
-
 | Authentication | Valid and invalid login |
-
 | Sessions | Expiration and logout |
-
 | Roles | Teacher denied admin-only operations |
-
 | Passwords | First-login change, reset, and old-session rejection |
-
 | Account lifecycle | Create, deactivate, reactivate |
-
 | Marks validation | Valid mark, invalid mark, `ABSENT` |
-
 | Duplicate protection | Repeat submission for same academic record |
-
 | Registers | Invalid student or subject |
-
 | Reporting | Student report and PDF export |
-
 | Data isolation | User cannot retrieve restricted data by calling backend endpoints directly |
-
 | Concurrency | Two simultaneous submissions |
-
 | Recovery | Restore from a test backup |
 
 Tests should use fictional records and include negative/security cases, not only successful UI interactions.
@@ -866,29 +794,17 @@ Tests should use fictional records and include negative/security cases, not only
 ## 🔧 Troubleshooting
 
 | Problem | Possible cause | What to check |
-
 |---|---|---|
-
 | `Script function not found: doGet` | Missing entry function or wrong deployment version | Confirm `doGet()` exists in `Code.gs`, save, and redeploy |
-
 | `Create Staff_Access sheet first` | Authentication sheet not initialized | Run `authInitialize_()` in the editor |
-
 | `Unexpected Staff_Access headers` | Sheet columns do not match the expected schema | Compare headers A:H exactly |
-
 | `Authentication not initialized` | Missing private `AUTH_PEPPER` property | Run `authInitialize_()` in the correct Apps Script project |
-
 | `Session expired` | Session expired or was invalidated | Sign in again |
-
 | `Access denied: administrator only` | Teacher tried an admin-only action | Use the correct role; do not remove authorization checks |
-
 | HTML template not found | Case-sensitive file naming mismatch | Match `Index.html` to `createTemplateFromFile('Index')` |
-
 | Students or subjects not loading | Register naming/header mismatch | Compare actual workbook with source-code expectations |
-
 | Marks are not saved | Invalid data, duplicate entry, or permissions issue | Check validation feedback and Apps Script Executions |
-
 | PDF export fails | Missing permissions, data, or export configuration | Inspect `ReportExport.gs` and execution logs |
-
 | Latest changes do not appear | Old deployment version | Update the web-app deployment |
 
 <a id="customization"></a>
@@ -953,7 +869,7 @@ Avoid changing only the UI while leaving incompatible server-side validation or 
 
 ## 🤝 Contributing
 
-Suggestions, bug reports, and improvements are welcome through GitHub Issues and Pull Requests.
+I welcome suggestions, bug reports, and improvements through GitHub Issues and Pull Requests.
 
 When reporting a bug, include:
 
@@ -975,25 +891,11 @@ When reporting a bug, include:
 
 If the project owner has the right to license the code, add an appropriate `LICENSE` file and update this section. Confirm any school or contributor ownership requirements first.
 
-<a id="author"></a>
-
-## 👩‍💻 Author
-
-Developed by **Jegathayini Thiruchchelvam**.
-
-- GitHub: [@Jegathayini](https://github.com/Jegathayini)
-
-- Repository: [school_marks_system](https://github.com/Jegathayini/school_marks_system)
-
----
-
-🎓 **School Marks System** — Making academic marks management, analysis, and reporting simpler, one feature at a time! 🚀
-
 <a id="feedback-and-bug-reports"></a>
 
 ## 💬 Feedback, bugs and improvements
 
-This project is shared so that other schools, students and developers can learn from it and adapt it. **If you find an error or have an idea for improvement, please let me know!** 💙
+I'm sharing this project so other schools, students, and developers can explore it and adapt it to their needs. **If you find an error or have an idea for improvement, please let me know!** 💙
 
 - Open a [GitHub Issue](https://github.com/Jegathayini/school_marks_system/issues) with the affected feature, steps to reproduce, and the expected versus actual result.
 
@@ -1001,22 +903,18 @@ This project is shared so that other schools, students and developers can learn 
 
 - Contributions and suggestions are welcome, subject to the repository's licensing and school permissions.
 
-Thank you for helping improve **School Marks System**! 🎓✨
+Thank you for trying my project and helping me improve **School Marks System**! 🎓✨
 
 <a id="exact-register-layout"></a>
 
 ## 📚 Exact two-row student register format (important)
 
-Download [`fictional_marks_sheet_sample.xlsx`](fictional_marks_sheet_sample.xlsx) from this repository. It contains three fictional example registers matching the **two-row header layout** used in this project.
+Download [`fictional_marks_sheet_sample.xlsx`](fictional_marks_sheet_sample.xlsx) from this repository. It contains three fictional example registers illustrating the **two-row header layout** used in this project.
 
 | Spreadsheet row | What schools should enter |
-
 | --- | --- |
-
 | **Row 1** | `StudentID` / `Student Name`, `StudentName` / `Student Name`, `Grade`, then main subject headings or subject groups (e.g. `Section 01`, `ARTS STREAM`). Preserve the exact column positions shown in the sample. |
-
 | **Row 2** | Additional subject names and options (e.g. `Hinduism`, `RC`, `NonRC`, `Music`, `Dance`, `Geography`, `Accounting`) in their designated columns. **Do not delete this row.** |
-
 | **Row 3 onward** | One student per row: unique student ID, name, grade, followed by `Yes` or `No` for each subject. |
 
 ### 🏫 Three register worksheets
@@ -1030,9 +928,7 @@ Download [`fictional_marks_sheet_sample.xlsx`](fictional_marks_sheet_sample.xlsx
 ### 📝 Example student row
 
 | StudentID | StudentName | Grade | Maths | Science | Tamil | English | … |
-
 | --- | --- | --- | --- | --- | --- | --- | --- |
-
 | ST1001 | Example Student | Grade 10 | Yes | Yes | Yes | Yes | … |
 
 `Yes` means the student is enrolled in that subject; `No` means they are not. **Do not enter exam marks in the student register.** Teachers submit marks through the web application.
@@ -1040,3 +936,18 @@ Download [`fictional_marks_sheet_sample.xlsx`](fictional_marks_sheet_sample.xlsx
 > ⚠️ **Important:** The two-row header is intentional. Do not shift the subject columns or replace the second row with student data. Keep the sheet/tab names and subject spelling consistent with the constants and parsing logic in `Code.js`. Check the code before importing into your own spreadsheet. The sample contains fictional data only.
 
 To set up your school: download the workbook, review each register, replace the fictional students with your school's records **in a private school-owned spreadsheet**, verify subjects and grade labels, and follow the Apps Script setup instructions above. Never commit the completed school register to a public repository.
+
+---
+
+---
+
+🎓 **School Marks System** — Built to make academic marks management, analysis, and reporting simpler! 🚀
+
+<a id="author"></a>
+
+## 👩‍💻 Author
+
+**Jegathayini Thiruchchelvam**
+
+- GitHub Profile: [@Jegathayini](https://github.com/Jegathayini)
+- Project Repository: [school_marks_system](https://github.com/Jegathayini/school_marks_system)
