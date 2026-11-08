@@ -1,4 +1,4 @@
-# 🎓 School Marks System
+# 🎓 School Marks System — Version 2
 
 **A smart, web-based school marks management and academic performance analysis system — powered by Google Apps Script and Google Sheets.** 📚📈
 
@@ -10,7 +10,9 @@
 
 [![Testing](https://img.shields.io/badge/Testing-Several%20Cases%20Passed-brightgreen)](#testing)
 
-> **Project status:** I've tested the School Marks System through several functional test cases. If you'd like to evaluate it, I recommend first trying it with the included [fictional sample workbook](fictional_marks_sheet_sample.xlsx), checking the setup and results, and letting me know about any errors through [GitHub Issues](https://github.com/Jegathayini/school_marks_system/issues). 💙
+[![Version](https://img.shields.io/badge/Version-2.0-blue)](#whats-new-in-version-2)
+
+> **Project status:** Version 2 feature development is complete, with the working Apps Script application tested. The public GitHub Pages demo is a separate deployment and should be verified independently. I've tested the School Marks System through several functional test cases. If you'd like to evaluate it, I recommend first trying it with the included [fictional sample workbook](fictional_marks_sheet_sample.xlsx), checking the setup and results, and letting me know about any errors through [GitHub Issues](https://github.com/Jegathayini/school_marks_system/issues). 💙
 
 <a id="live-demo"></a>
 
@@ -20,16 +22,13 @@
 
 The public demo lets visitors explore the interface using **fictional student records**. It runs on **GitHub Pages**, separately from the Google Apps Script application, and does **not** connect to a school's Google Sheets workbook. Demo changes are stored locally in the visitor's browser and are not shared with other visitors.
 
-### 🔑 Demo login credentials
+### 🔑 Demo access
 
-| Role | Username | Password |
-|---|---|---|
-| Administrator | `demo_admin` | `Admin@Demo2026` |
-| Teacher | `demo_teacher` | `Teacher@Demo2026` |
+**Demo login instructions and example credentials are displayed directly on the demo website.** Open the live demo to view them.
 
 > **Demo only:** These are public example credentials, not real school accounts. Do not enter real student details, marks, or passwords in the demo. Some production features, including account administration, are intentionally unavailable in the public version.
 
-The demo source files are in [`docs/`](docs/). The full Google Apps Script application and its setup instructions are documented below.
+The demo source files are in [`docs/`](docs/). Version 2 demo features must be tested after publishing the updated GitHub Pages files. The full Google Apps Script application and its setup instructions are documented below.
 
 ---
 
@@ -53,42 +52,88 @@ I built **School Marks System** to make marks entry, academic progress tracking,
 
 1. [Live demo](#live-demo)
 
-2. [Overview](#overview)
+2. [What's new in Version 2](#whats-new-in-version-2)
 
-3. [Main features](#main-features)
+4. [Overview](#overview)
 
-4. [User roles](#user-roles)
+4. [Main features](#main-features)
 
-5. [Technology stack](#technology-stack)
+5. [User roles](#user-roles)
 
-6. [How the system works](#how-the-system-works)
+6. [Technology stack](#technology-stack)
 
-7. [Repository structure](#repository-structure)
+7. [How the system works](#how-the-system-works)
 
-8. [Requirements](#requirements)
+8. [Repository structure](#repository-structure)
 
-9. [Installation and configuration](#installation-and-configuration)
+9. [Requirements](#requirements)
 
-10. [Google Sheets data model](#google-sheets-data-model)
+10. [Installation and configuration](#installation-and-configuration)
 
-11. [Account administration](#account-administration)
+11. [Google Sheets data model](#google-sheets-data-model)
 
-12. [Typical workflows](#typical-workflows)
+12. [Account administration](#account-administration)
 
-13. [Security and privacy](#security-and-privacy)
+13. [Typical workflows](#typical-workflows)
 
-14. [Testing](#testing)
+14. [Security and privacy](#security-and-privacy)
 
-15. [Troubleshooting](#troubleshooting)
+15. [Testing](#testing)
 
-16. [Customization](#customization)
+16. [Troubleshooting](#troubleshooting)
 
-17. [Limitations and roadmap](#limitations-and-roadmap)
+17. [Customization](#customization)
 
-18. [Contributing](#contributing)
+18. [Limitations and roadmap](#limitations-and-roadmap)
 
-19. [Feedback and bug reports](#feedback-and-bug-reports)
-20. [Author](#author)
+19. [Contributing](#contributing)
+
+20. [Feedback and bug reports](#feedback-and-bug-reports)
+21. [Author](#author)
+
+<a id="whats-new-in-version-2"></a>
+
+## 🚀 What's new in Version 2?
+
+**Version 2 extends the original marks-management system without replacing its core teacher, administrator, Google Apps Script, or Google Sheets workflows.** The improvements focus on assessment coverage, performance insights, rankings, and flexible PDF exports.
+
+| Area | Version 2 improvements |
+|---|---|
+| 📝 Marks entry | Term examination marks and School-Based Assessment (SBA) marks workflows |
+| 📊 Subject analysis | Subject-wise results with student rankings and completion-aware calculations |
+| 📉 Performance insights | Exam marks distribution and below-40 performance analysis |
+| 📈 Term comparisons | Comparison of academic results across Terms 1, 2, and 3 |
+| 🏆 Recognition | Annual top performers and subject-based recognition reports |
+| 📄 Student reports | Individual student reports, annual rankings, and separate term-specific PDF downloads |
+| 📦 Bulk export | Select one grade or all grades, then select one term or all reports for ZIP downloads |
+
+### 📋 Assessment and analysis details
+
+- **Term Exam and SBA:** Teachers can record examination and SBA results using the corresponding supported workflows. SBA reports are available for academic review.
+- **ABSENT and pending records:** `ABSENT` is treated as zero in the applicable academic calculations. Missing/unsubmitted marks remain pending; incomplete students are not assigned a finalized rank.
+- **Subject-wise rankings:** Student ranking information accompanies the subject analysis and exported reports. Equal scores share the same rank.
+- **Marks distribution:** Review how marks are distributed across performance ranges rather than relying only on averages.
+- **Below-40 analysis:** Identify records below the 40-mark threshold for academic follow-up; this is a reporting aid, not an automated judgment about students.
+- **Annual top performers:** Review completed three-term results for recognition and prize-giving preparation, subject to the report's completeness requirements.
+
+### 📄 Flexible student reports and ZIP downloads
+
+Administrators can choose an **academic year**, a **grade** (`Grade 01` through `Grade 13` or **All Grades**), and a **report selection** (**Term 1**, **Term 2**, **Term 3**, or **All Reports**).
+
+| Grade selection | Report selection | Expected output |
+|---|---|---|
+| One grade | One term | ZIP of individual students' PDFs for that grade and term |
+| All Grades | One term | Term-specific student PDFs for all supported grades, grouped into ZIP downloads |
+| One grade | All Reports | The existing complete report export for the selected grade |
+| All Grades | All Reports | The existing complete report export for all supported grades |
+
+Individual term PDFs include subject marks, total, average, and term rank where the records are complete. The existing annual and subject-level reporting options remain available.
+
+> **Grade coverage note:** The Version 2 reporting interface supports Grades 01–13, while the **included V1 fictional sample workbook and the register-layout examples below cover Grades 06–13**. The sample workbook is not a complete Grades 01–13 production schema. Check your exact V2 register configuration before importing additional grades.
+
+> **Scope note:** National Examination Results and the Five-Year Summary/Plan are **not part of the finalized Version 2 release**. They are not represented as completed features here.
+
+---
 
 <a id="overview"></a>
 
@@ -122,7 +167,7 @@ The project is designed around a **single-school deployment** and can be adapted
 
 <a id="1-teacher-marks-entry"></a>
 
-### 📝 1. Teacher marks entry
+### 📝 1. Teacher marks entry (Term Exam + SBA)
 
 - Sign in with an assigned teacher account.
 
@@ -133,6 +178,8 @@ The project is designed around a **single-school deployment** and can be adapted
 - Validate mark values and student/subject selections server-side.
 
 - Support an **ABSENT** value where permitted by the submission logic.
+
+- Support separate **School-Based Assessment (SBA)** marks workflows in Version 2.
 
 - Detect and reject duplicate marks entries according to the server's validation rules.
 
@@ -152,6 +199,10 @@ The project is designed around a **single-school deployment** and can be adapted
 
 - Provide dashboard and submission-status views.
 
+- Review subject-wise rankings, exam marks distribution, and below-40 results in Version 2.
+
+- Review annual top performers where results are complete.
+
 <a id="3-student-reports"></a>
 
 ### 📄 3. Student reports
@@ -161,6 +212,10 @@ The project is designed around a **single-school deployment** and can be adapted
 - Display academic results and term-based comparisons.
 
 - Support PDF/report export through the export module.
+
+- Download individual **Term 1, Term 2, or Term 3** student PDFs, with subject marks, totals, averages, and ranks where complete.
+
+- Generate **grade-wise or all-grades ZIP exports** for a selected term or all available reports.
 
 <a id="4-administrator-functions"></a>
 
@@ -319,6 +374,11 @@ school_marks_system/
 
 ├── TermComparison.js      # Term comparison logic
 
+├── docs/                   # Public GitHub Pages demo (fictional data only)
+│   ├── index.html
+│   ├── demo-api.js
+│   ├── demo-data.js
+│   └── demo-storage.js
 ├── index.html             # Browser UI (Apps Script HTML template)
 
 ├── appscript.json         # Apps Script manifest (rename on import)
@@ -514,7 +574,9 @@ Before using the system with school records, use the fictional sample workbook t
 
 6. Dashboard, analysis, and term comparisons.
 
-7. Student reports and PDF export.
+7. Student reports and PDF export, including term-specific individual PDFs and grade/all-grades ZIP selections.
+
+7a. SBA entry and reporting, subject rankings, below-40 analysis, marks distribution, and annual top performers.
 
 8. Teacher deactivation and attempted access afterward.
 
@@ -804,6 +866,9 @@ Suggested minimum test matrix:
 | Duplicate protection | Repeat submission for same academic record |
 | Registers | Invalid student or subject |
 | Reporting | Student report and PDF export |
+| V2 term reports | One grade/all grades × Term 1/2/3; check individual PDF contents and ranks |
+| V2 full export | One grade/all grades × All Reports; ensure no existing report types are omitted |
+| V2 academic analysis | SBA, subject rankings, below-40 analysis, marks distribution, annual top performers |
 | Data isolation | User cannot retrieve restricted data by calling backend endpoints directly |
 | Concurrency | Two simultaneous submissions |
 | Recovery | Restore from a test backup |
@@ -954,7 +1019,7 @@ To set up your school: download the workbook, review each register, replace the 
 
 ---
 
-🎓 **School Marks System** — Built to make academic marks management, analysis, and reporting simpler! 🚀
+🎓 **School Marks System V2** — Built to make academic marks management, analysis, and reporting simpler! 🚀
 
 <a id="author"></a>
 
