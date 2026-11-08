@@ -30,13 +30,17 @@
 
 /* ========== REGISTER CONFIGURATION ========== */
 
-/*
- * IMPORTANT:
- * Change these sheetName values to match the
- * exact names of your Google Sheets tabs.
- */
-
 const REGISTER_CONFIG = [
+  {
+    sheetName: 'Grade 01 to 05',
+    grades: [
+      'Grade 01',
+      'Grade 02',
+      'Grade 03',
+      'Grade 04',
+      'Grade 05'
+    ]
+  },
   {
     sheetName: 'Grade 06 to 09',
     grades: [
@@ -63,6 +67,14 @@ const REGISTER_CONFIG = [
 ];
 
 /*
+ * IMPORTANT:
+ * Change these sheetName values to match the
+ * exact names of your Google Sheets tabs.
+ */
+
+
+
+/*
  * Compatibility constant.
  *
  * Older backend files may still reference this.
@@ -73,6 +85,9 @@ const REGISTER_SHEET = 'Grade 06 to 09';
 /* ========== MARKS CONFIGURATION ========== */
 
 const MARKS_SHEET = 'Marks_Entries';
+
+const SBA_SHEET = 'SBA_Entries';
+
 
 const RELIGION = [
   'Hinduism',
@@ -289,7 +304,7 @@ function readRegister_(grade) {
 
   const config = grade
     ? getRegisterConfig_(grade)
-    : REGISTER_CONFIG[0];
+    : getRegisterConfig_('Grade 06');
 
   const sheet = book_().getSheetByName(
     config.sheetName
@@ -1100,4 +1115,195 @@ function debugMarksSheet() {
   Logger.log('Last row: ' + sheet.getLastRow());
   Logger.log('Populated data rows: ' + populatedRows.length);
   Logger.log('First populated row: ' + JSON.stringify(populatedRows[0] || null));
+}
+
+
+/* ========== SBA MARKS STORAGE ========== */
+
+function saveSBAMarksInternal_(payload, submittedBy) {
+  const submitter = String(submittedBy || '')
+    .trim()
+    .toLowerCase();
+
+  if (!/^[a-z][a-z0-9._-]{3,31}$/.test(submitter)) {
+    throw new Error('Unauthorized submitter.');
+  }
+
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('Missing SBA submission.');
+  }
+
+  const context = validateContext_(
+    payload.year,
+    payload.grade,
+    payload.term
+  );
+
+  const subject = String(payload.subject || '').trim();
+
+  if (!Array.isArray(payload.marks) || !payload.marks.length) {
+    throw new Error('No SBA marks submitted.');
+  }
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+
+  try {
+    const students = getStudentsInternal_(
+      context.grade,
+      subject
+    );
+
+    const allowed = new Map(
+      students.map(s => [s.id, s.name])
+    );
+
+    const entries = [];
+    const submittedIds = new Set();
+
+    for (const item of payload.marks) {
+      const id = String(item.id || '').trim();
+
+      if (!allowed.has(id)) {
+        throw new Error('Student not enrolled: ' + id);
+      }
+
+      if (submittedIds.has(id)) {
+        throw new Error('Duplicate student: ' + id);
+      }
+
+      submittedIds.add(id);
+
+      if (
+        item.mark === '' ||
+        item.mark === null ||
+        item.mark === undefined
+      ) {
+        continue;
+      }
+
+      const text = String(item.mark).trim();
+      let mark;
+
+      if (text.toUpperCase() === 'ABSENT') {
+        mark = 'ABSENT';
+      } else {
+        if (!/^\d+(?:\.\d+)?$/.test(text)) {
+          throw new Error('Invalid SBA mark: ' + id);
+        }
+
+        mark = Number(text);
+
+        if (!Number.isFinite(mark) || mark < 0 || mark > 100) {
+          throw new Error('SBA marks must be 0–100: ' + id);
+        }
+      }
+
+      entries.push({
+        id,
+        name: allowed.get(id),
+        mark
+      });
+    }
+
+    if (!entries.length) {
+      throw new Error('Enter at least one SBA mark.');
+    }
+
+    const sheet = ensureSheet_(SBA_SHEET, MARKS_HEADERS);
+    const storedRows = sheet.getDataRange().getValues();
+    const existingKeys = new Set();
+
+    for (let i = 1; i < storedRows.length; i++) {
+      const row = storedRows[i];
+
+      if (row.every(cell => cell === '' || cell === null)) {
+        continue;
+      }
+
+      if ([row[0], row[1], row[2], row[3], row[6]].some(
+        cell => cell === '' || cell === null
+      )) {
+        throw new Error(
+          'Incomplete SBA record at row ' + (i + 1)
+        );
+      }
+
+      const key = [
+        row[0],
+        row[1],
+        row[2],
+        String(row[3]),
+        row[6]
+      ].join('|');
+
+      if (existingKeys.has(key)) {
+        throw new Error('Duplicate stored SBA record: ' + key);
+      }
+
+      existingKeys.add(key);
+    }
+
+    const group = RELIGION.includes(subject)
+      ? 'Religion'
+      : AESTHETIC.includes(subject)
+        ? 'Aesthetic'
+        : subject;
+
+    const now = new Date();
+    const newRows = [];
+
+    for (const entry of entries) {
+      const key = [
+        context.year,
+        context.grade,
+        context.term,
+        entry.id,
+        subject
+      ].join('|');
+
+      if (existingKeys.has(key)) {
+        throw new Error(
+          'SBA marks already exist for student ' +
+          entry.id + '. Contact the administrator.'
+        );
+      }
+
+      existingKeys.add(key);
+
+      newRows.push([
+        context.year,
+        context.grade,
+        context.term,
+        entry.id,
+        entry.name,
+        group,
+        subject,
+        entry.mark,
+        now,
+        submitter
+      ]);
+    }
+
+    sheet.getRange(
+      sheet.getLastRow() + 1,
+      1,
+      newRows.length,
+      MARKS_HEADERS.length
+    ).setValues(newRows);
+
+    return {
+      added: newRows.length,
+      updated: 0,
+      total: newRows.length
+    };
+
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+
+function testConnection() {
+  testConnection_();
 }

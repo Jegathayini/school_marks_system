@@ -747,3 +747,95 @@ function testSubmissionGrade13_() {
     'Term 1'
   );
 }
+
+
+/* ========== SBA STUDENT ENTRY STATUS ========== */
+
+function getSBAPendingStudentsInternal_(year, grade, term, subject) {
+  const context = validateContext_(year, grade, term);
+  const selectedSubject = submissionValidateSubject_(
+    subject,
+    context.grade
+  );
+
+  const students = getStudentsInternal_(
+    context.grade,
+    selectedSubject
+  );
+
+  const sheet = book_().getSheetByName(SBA_SHEET);
+
+  // No SBA records yet: all enrolled students are pending.
+  if (!sheet) {
+    return {
+      total: students.length,
+      completed: 0,
+      pending: students.length,
+      students: students.map(s => ({
+        id: s.id,
+        name: s.name,
+        status: 'PENDING'
+      }))
+    };
+  }
+
+  // Verify the expected storage structure.
+  ensureSheet_(SBA_SHEET, MARKS_HEADERS);
+
+  const rows = sheet.getDataRange().getValues().slice(1);
+  const recorded = new Map();
+
+  for (const row of rows) {
+    if (
+      Number(row[0]) !== context.year ||
+      normalizeGrade_(row[1]) !== context.grade ||
+      String(row[2]).trim() !== context.term ||
+      String(row[6]).trim() !== selectedSubject
+    ) {
+      continue;
+    }
+
+    const id = String(row[3]).trim();
+    const mark = row[7];
+
+    if (!recorded.has(id)) {
+      recorded.set(id, []);
+    }
+
+    recorded.get(id).push(mark);
+  }
+
+  const result = students.map(student => {
+    const marks = recorded.get(student.id) || [];
+
+    const valid = marks.length === 1 && (
+      marks[0] === 'ABSENT' ||
+      (
+        marks[0] !== '' &&
+        marks[0] !== null &&
+        Number.isFinite(Number(marks[0])) &&
+        Number(marks[0]) >= 0 &&
+        Number(marks[0]) <= 100
+      )
+    );
+
+    return {
+      id: student.id,
+      name: student.name,
+      status: valid ? 'COMPLETED' : 'PENDING',
+      mark: valid ? marks[0] : null
+    };
+  });
+
+  const completed = result.filter(
+    s => s.status === 'COMPLETED'
+  ).length;
+
+  return {
+    total: result.length,
+    completed,
+    pending: result.length - completed,
+    students: result
+  };
+}
+

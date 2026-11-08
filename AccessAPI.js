@@ -131,3 +131,41 @@ function getAnnualTopPerformers(year, grade, token) {
   );
 }
 
+
+/* ========== AUTHENTICATED SBA SUBMISSION ========== */
+
+function saveSBAMarks() {
+  const args = Array.prototype.slice.call(arguments);
+  const token = args.pop();
+
+  const account = authRequire_(token, "STAFF");
+
+  if (args.length !== 1) {
+    throw new Error('Invalid SBA submission arguments.');
+  }
+
+  return saveSBAMarksInternal_(
+    args[0],
+    account.username
+  );
+}
+
+
+function getSBAPendingStudents(year, grade, term, subject, token) {
+  authRequire_(token, "STAFF");
+
+  return getSBAPendingStudentsInternal_(
+    year,
+    grade,
+    term,
+    subject
+  );
+}
+
+
+function getSBAReport(year, grade, term, token) {
+  authRequire_(token, "ADMIN");
+
+  return getSBAReportInternal_(year, grade, term);
+}
+
