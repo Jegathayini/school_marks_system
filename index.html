@@ -406,6 +406,21 @@ tr.absent-row input[type="number"] { background: #edf0f4; color: #64748b; }
       <span>Individual student marks, averages, progress chart and printable reports.</span>
       <b>View reports →</b>
     </button>
+    
+<button
+  class="menu-card"
+  onclick="openAnalysisSection('annual')"
+>
+  <strong>🏆 Annual Top Performers</strong>
+
+  <span>
+    Prize giving: grade-wide top three students
+    in every subject, using all three terms.
+  </span>
+
+  <b>View top performers →</b>
+</button>
+
   </div>
 </section>
 
@@ -496,6 +511,75 @@ tr.absent-row input[type="number"] { background: #edf0f4; color: #64748b; }
     <p id="termNote" class="muted"></p>
   </div>
 </section>
+
+
+<!-- ANNUAL TOP PERFORMERS -->
+<section id="annualView" class="hidden">
+
+  <button
+    class="secondary back"
+    onclick="showAnalysis()"
+  >
+    ← All analysis options
+  </button>
+
+  <div class="eyebrow">
+    Administrator workspace · Prize giving
+  </div>
+
+  <h1>Annual Top Performers</h1>
+
+  <p>
+    Rank students across the entire grade
+    for each subject using all three terms.
+  </p>
+
+  <div class="card">
+
+    <div class="toolbar">
+
+      <div>
+        <label>Grade</label>
+        <select id="annualGrade"></select>
+      </div>
+
+      <div>
+        <label>Academic year</label>
+        <input
+          id="annualYear"
+          type="number"
+          value="2026"
+        >
+      </div>
+
+      <button
+        class="primary"
+        onclick="loadAnnualTopPerformers()"
+      >
+        Generate Rankings
+      </button>
+
+      <button
+        class="secondary"
+        id="annualPdfButton"
+        onclick="downloadAnnualTopPerformersPdf()"
+        disabled
+      >
+        Download Prize Giving PDF
+      </button>
+
+    </div>
+
+    <p id="annualMessage" class="muted">
+      Choose a grade and generate rankings.
+    </p>
+
+    <div id="annualResults"></div>
+
+  </div>
+
+</section>
+
 
 <!-- STUDENT REPORTS -->
 <section id="studentView" class="hidden">
@@ -700,7 +784,7 @@ function message(id, text, error = false) {
 
 function showOnly(id) {
   if (authRole!=="ADMIN" && id!=="teacherView") return;
-  ["teacherView", "analysisMenu", "subjectView", "termView", "studentView", "exportView", "accountsView"]
+  ["teacherView", "analysisMenu", "subjectView", "termView", "studentView","annualView", "exportView", "accountsView"]
     .forEach(name => el(name).classList.toggle("hidden", name !== id));
 
   el("marksNav").classList.toggle("active", id === "teacherView");
@@ -721,6 +805,7 @@ function copyGrades(targetId) {
   target.value = el("grade").value;
 }
 
+
 function openAnalysisSection(section) {
   if (section === "subject") {
     showOnly("subjectView");
@@ -728,11 +813,19 @@ function openAnalysisSection(section) {
     el("analysisYear").value = el("year").value;
     el("analysisTerm").value = el("term").value;
     loadAnalysis();
+
   } else if (section === "term") {
     showOnly("termView");
     copyGrades("termGrade");
     el("termYear").value = el("year").value;
     loadTermComparison();
+
+  } else if (section === "annual") {
+    showOnly("annualView");
+    copyGrades("annualGrade");
+    el("annualYear").value = el("year").value;
+    loadAnnualTopPerformers();
+
   } else if (section === "student") {
     showOnly("studentView");
     copyGrades("reportGrade");
@@ -740,6 +833,7 @@ function openAnalysisSection(section) {
     loadReportStudents();
   }
 }
+
 
 /* ========== INITIAL CONNECTION ========== */
 
@@ -1256,6 +1350,242 @@ function renderTermComparison(data) {
   el("termNote").textContent = data.note || "";
 }
 
+
+/* ========== ANNUAL TOP PERFORMERS ========== */
+
+let annualRequest = 0;
+let annualData = null;
+
+function loadAnnualTopPerformers() {
+  if (authRole !== "ADMIN") return;
+
+  const request = ++annualRequest;
+
+  annualData = null;
+
+  el("annualPdfButton").disabled = true;
+  el("annualResults").replaceChildren();
+
+  message(
+    "annualMessage",
+    "Calculating annual subject rankings..."
+  );
+
+  google.script.run
+    .withSuccessHandler(data => {
+      if (request !== annualRequest) return;
+
+      annualData = data;
+      renderAnnualTopPerformers(data);
+    })
+    .withFailureHandler(err => {
+      if (request !== annualRequest) return;
+
+      message(
+        "annualMessage",
+        err.message,
+        true
+      );
+    })
+    .getAnnualTopPerformers(
+      el("annualYear").value,
+      el("annualGrade").value,
+      authToken
+    );
+}
+
+function renderAnnualTopPerformers(data) {
+  const host = el("annualResults");
+  host.replaceChildren();
+
+  const pending = (data.subjects || [])
+    .filter(s => s.pending > 0);
+
+  const warningCount = (data.warnings || []).length;
+
+  const complete = data.ready;
+
+  message(
+    "annualMessage",
+    complete
+      ? `${data.grade} · ${data.year}: Rankings ready.`
+      : `Not ready: ${pending.length} subjects have missing term results; ${warningCount} validation warnings.`,
+    !complete
+  );
+
+  el("annualPdfButton").disabled = !complete;
+
+  if (warningCount) {
+    host.append(
+      node(
+        "p",
+        `Validation warnings: ${data.warnings.slice(0, 5).join(" | ")}`,
+        "muted"
+      )
+    );
+  }
+
+  for (const subject of data.subjects || []) {
+    const block = node("div", undefined, "card");
+
+    block.append(node("h2", subject.subject));
+
+    if (subject.pending > 0) {
+      block.append(
+        node(
+          "p",
+          `${subject.pending} of ${subject.enrolled} students have incomplete results.`,
+          "muted"
+        )
+      );
+    } else if (!subject.top.length) {
+      block.append(
+        node("p", "No eligible students.", "muted")
+      );
+    } else if (warningCount) {
+      block.append(
+        node(
+          "p",
+          "Resolve validation warnings before publishing.",
+          "muted"
+        )
+      );
+    } else {
+      const wrap = node("div", undefined, "tablewrap");
+      const table = document.createElement("table");
+
+      const thead = document.createElement("thead");
+      const headerRow = document.createElement("tr");
+
+      [
+        "Rank",
+        "Student ID",
+        "Student name",
+        "Term 1",
+        "Term 2",
+        "Term 3",
+        "Annual average"
+      ].forEach(heading => {
+        headerRow.append(node("th", heading));
+      });
+
+      thead.append(headerRow);
+      table.append(thead);
+
+      const tbody = document.createElement("tbody");
+
+      subject.top.forEach(student => {
+        const tr = document.createElement("tr");
+
+        const values = [
+          student.rank,
+          student.id,
+          student.name,
+          ...student.terms.map(m =>
+            m === "AB"
+              ? "AB (0)"
+              : Number(m).toFixed(2)
+          ),
+          student.annualAverage.toFixed(2)
+        ];
+
+        values.forEach(value => {
+          tr.append(node("td", value));
+        });
+
+        tbody.append(tr);
+      });
+
+      table.append(tbody);
+      wrap.append(table);
+      block.append(wrap);
+    }
+
+    host.append(block);
+  }
+
+  host.append(node("p", data.note, "muted"));
+}
+
+function downloadAnnualTopPerformersPdf() {
+  if (
+    authRole !== "ADMIN" ||
+    !annualData ||
+    !annualData.ready
+  ) return;
+
+  const data = annualData;
+  const rows = [];
+
+  for (const subject of data.subjects) {
+    for (const student of subject.top) {
+      rows.push([
+        subject.subject,
+        String(student.rank),
+        String(student.id),
+        student.name,
+        ...student.terms.map(m =>
+          m === "AB"
+            ? "AB"
+            : Number(m).toFixed(2)
+        ),
+        student.annualAverage.toFixed(2)
+      ]);
+    }
+  }
+
+  if (!rows.length) {
+    message(
+      "annualMessage",
+      "No ranked students to export.",
+      true
+    );
+    return;
+  }
+
+  const pdf = exportPdf(
+    `${data.grade} - Annual Subject Top Performers`,
+    `Prize Giving | Academic year: ${data.year} | Registered students: ${data.studentCount}`,
+    [
+      "Subject",
+      "Rank",
+      "Student ID",
+      "Student name",
+      "Term 1",
+      "Term 2",
+      "Term 3",
+      "Annual avg."
+    ],
+    rows
+  );
+
+  const blob = pdf instanceof Blob
+    ? pdf
+    : new Blob(
+        [pdf],
+        { type: "application/pdf" }
+      );
+
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+
+  a.href = url;
+
+  a.download =
+    `Annual_Top_Performers_${data.year}_` +
+    `${exportSafeName(data.grade).replace(/ /g, "_")}.pdf`;
+
+  document.body.append(a);
+  a.click();
+  a.remove();
+
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 60000);
+}
+
+
 /* ========== STUDENT REPORTS ========== */
 
 function loadReportStudents() {
@@ -1545,7 +1875,7 @@ function exportLatin(value) {
 function exportPdfEscape(value) {
   return exportLatin(value).replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
 }
-function exportPdf(title, metadata, headings, rows, chart = null) {
+function exportPdf(title, metadata, headings, rows, chart = null, subjectComparison = null) {
   // Professional A4 landscape layout, PDF vector charts, no external libraries.
   const W = 841.89, H = 595.28, M = 40, RIGHT = W - M;
   const NAVY = [0.075, 0.16, 0.30], BLUE = [0.15, 0.36, 0.72];
@@ -1561,8 +1891,18 @@ function exportPdf(title, metadata, headings, rows, chart = null) {
   const commandsByPage = [];
   const columnCount = headings.length;
   const contentWidth = W - 2 * M;
-  const baseWidths = columnCount === 8 ? [230, 76, 76, 72, 76, 78, 83, 90] :
-    columnCount === 4 ? [335, 142, 142, 142] : Array(columnCount).fill(contentWidth / columnCount);
+  
+  const baseWidths =
+  columnCount === 8 && headings[0] === "Subject"
+    ? [116, 44, 90, 182, 77, 77, 77, 98]
+    : columnCount === 8
+      ? [230, 76, 76, 72, 76, 78, 83, 90]
+      : columnCount === 4
+        ? [335, 142, 142, 142]
+        : Array(columnCount).fill(
+            contentWidth / columnCount
+          );
+
   const widthFactor = contentWidth / baseWidths.reduce((a, b) => a + b, 0);
   const widths = baseWidths.map(v => v * widthFactor);
   const xPositions = [M];
@@ -1715,6 +2055,52 @@ function exportPdf(title, metadata, headings, rows, chart = null) {
       throw new Error('Unable to fit report row on the PDF page.');
     commandsByPage.push(out);
   } while (remaining < dataRows.length || commandsByPage.length === 0);
+
+  // Additional landscape pages for term-by-term subject averages.
+  // These are separate pages so the original class chart and tables never overlap.
+  if (subjectComparison && Array.isArray(subjectComparison.items) && subjectComparison.items.length) {
+    const subjects = subjectComparison.items;
+    const colors = [[0.15, 0.36, 0.72], [0.10, 0.61, 0.50], [0.91, 0.53, 0.19]];
+    const terms = ['Term 1', 'Term 2', 'Term 3'];
+    const perPage = 12;
+    const plotX = M + 168, plotWidth = contentWidth - 210;
+    const plotTop = H - 189, rowSpacing = 29;
+    const validAverage = v => v !== null && v !== undefined && v !== '' &&
+      Number.isFinite(Number(v));
+    for (let start = 0; start < subjects.length; start += perPage) {
+      const subset = subjects.slice(start, start + perPage);
+      let out = header(commandsByPage.length + 1);
+      out += text('SUBJECT AVERAGES BY TERM (0-100)', M, H - 140, 11, true, NAVY);
+      terms.forEach((term, i) => {
+        const lx = M + 355 + i * 118;
+        out += rect(lx, H - 143, 10, 10, colors[i]);
+        out += text(term, lx + 15, H - 141, 8, false, INK);
+      });
+      [0, 25, 50, 75, 100].forEach(tick => {
+        const x = plotX + plotWidth * tick / 100;
+        out += rule(x, plotTop + 12, x, plotTop - (perPage - 1) * rowSpacing - 24, LINE, .5);
+        out += text(String(tick), x - 8, plotTop + 19, 7.2, false, MUTED);
+      });
+      subset.forEach((subject, i) => {
+        const y = plotTop - i * rowSpacing - 4;
+        out += text(fitted(subject.label, 155, 8.2), M + 7, y - 9, 8.2, true, INK);
+        const averages = Array.isArray(subject.values) ? subject.values : [];
+        for (let termIndex = 0; termIndex < 3; termIndex++) {
+          const value = averages[termIndex];
+          const barY = y - termIndex * 7.2;
+          if (validAverage(value)) {
+            const width = plotWidth * Math.max(0, Math.min(100, Number(value))) / 100;
+            if (width > 0) out += rect(plotX, barY, width, 5.5, colors[termIndex]);
+            out += text(Number(value).toFixed(1), Math.min(plotX + width + 4, RIGHT - 28), barY, 6.5, false, INK);
+          } else {
+            out += text('-', plotX + 3, barY, 7, false, MUTED);
+          }
+        }
+      });
+      out += text('Dash (-) indicates Pending / not recorded; zero is a recorded average.', M, 57, 7.2, false, MUTED);
+      commandsByPage.push(out);
+    }
+  }
 
   commandsByPage.forEach((commands, i) => {
     const bytes = exportEncoder.encode(commands + footer(i + 1, commandsByPage.length));
@@ -1882,7 +2268,8 @@ async function startReportExport() {
         rows.push(['Marks entered',...c.terms.map(t => t.entered+'/'+t.expected)]);
         const pdf = exportPdf(`${grade} - Term-wise Comparison`,`Academic year: ${year} | Registered students: ${c.studentCount}`,
           ['Subject','Term 1','Term 2','Term 3'],rows,
-          {type:'line',title:'Class average by term (0-100)',items:c.terms.map(t=>({label:t.term,value:t.classAverage}))});
+          {type:'line',title:'Class average by term (0-100)',items:c.terms.map(t=>({label:t.term,value:t.classAverage}))},
+          {items:(c.subjects || []).map(s=>({label:s.subject,values:(s.terms || []).map(t=>t.average)}))});
         record(`2. Termwise Analysis/${exportSafeName(grade)}.pdf`,pdf);
       } catch (err) { addFailure(`${grade} term comparison`,err); }
       exportUpdate(++done,total,`${grade} / term comparison (${failures.length} errors)`);

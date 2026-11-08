@@ -120,3 +120,14 @@ function exportFinish() {
   authRequire_(token, "ADMIN");
   return exportFinishInternal_.apply(null, args);
 }
+
+
+function getAnnualTopPerformers(year, grade, token) {
+  authRequire_(token, "ADMIN");
+
+  return getAnnualTopPerformersInternal_(
+    year,
+    grade
+  );
+}
+
