@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>School Academic Management</title>
+<title>School Academic Management V2 · Public Demo</title>
 
 <style>
 :root {
@@ -267,7 +267,7 @@ tr.absent-row input[type="number"] { background: #edf0f4; color: #64748b; }
 </head>
 
 <body>
-<div id="authGate" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#f2f5fa"><form id="authForm" style="width:min(420px,100%);background:white;border:1px solid #e1e8f2;border-radius:17px;padding:30px;box-shadow:0 10px 30px #20385b0a"><h2>School Academic Management</h2><p>Public demo · Fictional records only</p><p style="font-size:13px">Admin: <code>demo_admin</code> / <code>Admin@Demo2026</code><br>Teacher: <code>demo_teacher</code> / <code>Teacher@Demo2026</code></p><label for="authUsername">Username</label><input id="authUsername" autocomplete="username" required><label for="authPassword" style="margin-top:14px">Password</label><input id="authPassword" type="password" autocomplete="current-password" required><button class="primary" id="authLoginButton" style="width:100%;margin-top:20px" type="submit">Sign in</button><p id="authError" role="alert" style="color:#a32734"></p></form></div>
+<div id="authGate" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#f2f5fa"><form id="authForm" style="width:min(420px,100%);background:white;border:1px solid #e1e8f2;border-radius:17px;padding:30px;box-shadow:0 10px 30px #20385b0a"><h2>School Academic Management</h2><p><strong>Public V2 demo</strong> · Fictional student records only. No Google Sheets connection.</p><p style="font-size:13px">Admin: <code>demo_admin</code> / <code>Admin@Demo2026</code><br>Teacher: <code>demo_teacher</code> / <code>Teacher@Demo2026</code></p><label for="authUsername">Username</label><input id="authUsername" autocomplete="username" required><label for="authPassword" style="margin-top:14px">Password</label><input id="authPassword" type="password" autocomplete="current-password" required><button class="primary" id="authLoginButton" style="width:100%;margin-top:20px" type="submit">Sign in</button><p id="authError" role="alert" style="color:#a32734"></p></form></div>
 <div id="passwordGate" class="hidden" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#f2f5fa">
   <form id="passwordForm" class="card" style="width:min(450px,100%)">
     <h2>Change your temporary password</h2>
@@ -293,7 +293,7 @@ tr.absent-row input[type="number"] { background: #edf0f4; color: #64748b; }
     <button id="exportNav" type="button" onclick="showExport()">Save All Reports</button>
     <button id="accountsNav" class="hidden" type="button" onclick="showAccounts()">Manage Teachers</button>
   </nav>
-  <span id="mode">Public demo</span><button type="button" class="secondary" onclick="if(confirm('Reset all fictional demo marks on this browser?')){DemoAPI.resetDemo();location.reload();}">Reset demo data</button><button type="button" class="secondary" onclick="authSignOut()">Sign out</button>
+  <span id="mode">Public V2 demo</span><button type="button" class="secondary" onclick="if(confirm('Reset all fictional demo marks on this browser?')){DemoAPI.resetDemo();location.reload();}">Reset demo data</button><button type="button" class="secondary" onclick="authSignOut()">Sign out</button>
 </header>
 
 <main>
@@ -340,12 +340,21 @@ tr.absent-row input[type="number"] { background: #edf0f4; color: #64748b; }
             <option>Term 2</option>
             <option>Term 3</option>
           </select>
+          
+<div>
+  <label for="assessmentType">Assessment Type</label>
+  <select id="assessmentType" onchange="assessmentTypeChanged()">
+    <option value="EXAM">Term Exam</option>
+    <option value="SBA">School-Based Assessment (SBA)</option>
+  </select>
+</div>
+
         </div>
       </div>
 
       <h3>Term submission progress</h3>
       <button class="secondary" onclick="refreshSubmissionStatus()">Refresh status</button>
-      <p id="trackerMessage" class="muted">Loading fictional demo records...</p>
+      <p id="trackerMessage" class="muted">Connecting to Google Sheets...</p>
       <div class="progress"><div id="trackerProgress"></div></div>
       <div id="trackerList" class="status-grid"></div>
 
@@ -388,24 +397,62 @@ tr.absent-row input[type="number"] { background: #edf0f4; color: #64748b; }
 <section id="analysisMenu" class="hidden">
   <div class="eyebrow">Administrator workspace</div>
   <h1>Marks Analysis</h1>
-  <p>Select the report you want to view. Results come from fictional data saved in this browser.</p>
+  <p>Select the report you want to view. Results come from saved Google Sheets marks.</p>
 
   <div class="menu">
+    <button class="menu-card" onclick="openAnalysisSection('below40')">
+      <strong>📉 Below-40 Exam Performance</strong>
+      <span>Identify students scoring below 40 in each subject for a selected grade and term.</span>
+      <b>View students →</b>
+    </button>
+    <button class="menu-card" onclick="openAnalysisSection('distribution')">
+      <strong>📊 Exam Marks Distribution</strong>
+      <span>Subject-wise counts across mark ranges, with absent and pending results shown separately.</span>
+      <b>View distribution →</b>
+    </button>
     <button class="menu-card" onclick="openAnalysisSection('subject')">
-      <strong>▥ Subject-wise Analysis</strong>
+      <strong>📊 Subject-wise Analysis</strong>
       <span>Class averages, student results, subject performance and marks submission tracker.</span>
       <b>Open dashboard →</b>
     </button>
     <button class="menu-card" onclick="openAnalysisSection('term')">
-      <strong>↗ Term-wise Comparison Graphs</strong>
+      <strong>📈 Term-wise Comparison Graphs</strong>
       <span>Compare academic performance across Terms 1, 2 and 3.</span>
       <b>View comparison →</b>
     </button>
     <button class="menu-card" onclick="openAnalysisSection('student')">
-      <strong>▤ Student Performance Reports</strong>
+      <strong>🎓 Student Performance Reports</strong>
       <span>Individual student marks, averages, progress chart and printable reports.</span>
       <b>View reports →</b>
     </button>
+    
+<button
+  class="menu-card"
+  onclick="openAnalysisSection('annual')"
+>
+  <strong>🏆 Annual Top Performers</strong>
+
+  <span>
+    Prize giving: grade-wide top three students
+    in every subject, using all three terms.
+  </span>
+
+  <b>View top performers →</b>
+</button>
+
+<button
+  class="menu-card"
+  onclick="openAnalysisSection('sba')"
+>
+  <strong>📋 SBA Assessment Reports</strong>
+  <span>
+    View School-Based Assessment marks for
+    every subject, grade and term.
+  </span>
+  <b>View SBA reports →</b>
+</button>
+
+
   </div>
 </section>
 
@@ -413,12 +460,19 @@ tr.absent-row input[type="number"] { background: #edf0f4; color: #64748b; }
 <section id="exportView" class="hidden">
   <div class="eyebrow">Administrator workspace</div>
   <h1>Save All Reports</h1>
-  <p>Generate fictional academic PDFs for every grade and term. A ZIP downloads to your computer.</p>
+  <p>Generate academic PDFs for every grade and term. A ZIP will download to your computer. All student records are fictional; nothing is sent to Google Sheets.</p>
   <div class="card">
     <label for="exportYear">Academic year</label>
     <input id="exportYear" type="number" value="2026" min="2020" max="2100" style="max-width:200px">
-    <label for="exportScope" style="margin-top:14px">Reports to generate</label>
-    <select id="exportScope" style="max-width:260px"><option value="all">All grades (06–13)</option><option value="Grade 06">Grade 06</option><option value="Grade 07">Grade 07</option><option value="Grade 08">Grade 08</option><option value="Grade 09">Grade 09</option><option value="Grade 10">Grade 10</option><option value="Grade 11">Grade 11</option><option value="Grade 12">Grade 12</option><option value="Grade 13">Grade 13</option></select>
+    <label for="exportScope" style="margin-top:14px">Grade</label>
+    <select id="exportScope" style="max-width:260px"><option value="all">All grades (01–13)</option><option value="Grade 01">Grade 01</option><option value="Grade 02">Grade 02</option><option value="Grade 03">Grade 03</option><option value="Grade 04">Grade 04</option><option value="Grade 05">Grade 05</option><option value="Grade 06">Grade 06</option><option value="Grade 07">Grade 07</option><option value="Grade 08">Grade 08</option><option value="Grade 09">Grade 09</option><option value="Grade 10">Grade 10</option><option value="Grade 11">Grade 11</option><option value="Grade 12">Grade 12</option><option value="Grade 13">Grade 13</option></select>
+    <label for="exportReportType" style="margin-top:14px">Reports to generate</label>
+    <select id="exportReportType" style="max-width:260px">
+      <option value="all">All Reports</option>
+      <option value="Term 1">Term 1 student reports</option>
+      <option value="Term 2">Term 2 student reports</option>
+      <option value="Term 3">Term 3 student reports</option>
+    </select>
     <div class="actions"><button id="exportButton" class="primary" type="button" onclick="startReportExport()">Generate reports</button></div>
     <p class="muted">Completed grades become downloadable immediately. Temporary connection errors are retried automatically. Keep this tab open until export finishes.</p>
     <p id="exportMessage" class="muted">Ready.</p>
@@ -473,6 +527,45 @@ tr.absent-row input[type="number"] { background: #edf0f4; color: #64748b; }
   </div>
 </section>
 
+<!-- BELOW-40 EXAM PERFORMANCE -->
+<section id="below40View" class="hidden">
+  <button class="secondary back" onclick="showAnalysis()">← All analysis options</button>
+  <div class="eyebrow">Academic Performance Analyzer · Term Exams</div>
+  <h1>Students Scoring Below 40</h1>
+  <p>Only numeric Term Exam marks below 40 are included. ABSENT and pending marks are excluded.</p>
+  <div class="card">
+    <div class="toolbar">
+      <div><label for="below40Grade">Grade</label><select id="below40Grade"></select></div>
+      <div><label for="below40Year">Academic year</label><input id="below40Year" type="number" value="2026" min="2020" max="2100"></div>
+      <div><label for="below40Term">Term</label><select id="below40Term"><option>Term 1</option><option>Term 2</option><option>Term 3</option></select></div>
+      <div><label for="below40Subject">Subject</label><select id="below40Subject"><option value="ALL">All subjects</option></select></div>
+      <button class="primary" onclick="loadBelow40()">Generate Report</button>
+      <button class="secondary" id="below40PdfButton" onclick="downloadBelow40Pdf()" disabled>Download PDF</button>
+    </div>
+    <p id="below40Message" class="muted" role="status">Select grade, year and term.</p>
+    <div id="below40Results"></div>
+  </div>
+</section>
+
+<!-- EXAM MARKS DISTRIBUTION -->
+<section id="distributionView" class="hidden">
+  <button class="secondary back" onclick="showAnalysis()">← All analysis options</button>
+  <div class="eyebrow">Academic Performance Analyzer · Term Exams</div>
+  <h1>Exam Marks Distribution</h1>
+  <p>Numeric exam marks are grouped into ranges. ABSENT and pending marks are shown separately.</p>
+  <div class="card">
+    <div class="toolbar">
+      <div><label for="distributionGrade">Grade</label><select id="distributionGrade"></select></div>
+      <div><label for="distributionYear">Academic year</label><input id="distributionYear" type="number" value="2026" min="2020" max="2100"></div>
+      <div><label for="distributionTerm">Term</label><select id="distributionTerm"><option>Term 1</option><option>Term 2</option><option>Term 3</option></select></div>
+      <button class="primary" onclick="loadExamDistribution()">Generate Distribution</button>
+      <button class="secondary" id="distributionPdfButton" onclick="downloadExamDistributionPdf()" disabled>Download PDF</button>
+    </div>
+    <p id="distributionMessage" class="muted" role="status">Select a grade, year and term.</p>
+    <div id="distributionResults"></div>
+  </div>
+</section>
+
 <!-- TERM COMPARISON -->
 <section id="termView" class="hidden">
   <button class="secondary back" onclick="showAnalysis()">← All analysis options</button>
@@ -496,6 +589,156 @@ tr.absent-row input[type="number"] { background: #edf0f4; color: #64748b; }
     <p id="termNote" class="muted"></p>
   </div>
 </section>
+
+
+<!-- ANNUAL TOP PERFORMERS -->
+<section id="annualView" class="hidden">
+
+  <button
+    class="secondary back"
+    onclick="showAnalysis()"
+  >
+    ← All analysis options
+  </button>
+
+  <div class="eyebrow">
+    Administrator workspace · Prize giving
+  </div>
+
+  <h1>Annual Top Performers</h1>
+
+  <p>
+    Rank students across the entire grade
+    for each subject using all three terms.
+  </p>
+
+  <div class="card">
+
+    <div class="toolbar">
+
+      <div>
+        
+<label for="annualGrade">Grade</label>
+<select id="annualGrade"></select>
+
+      </div>
+
+      <div>
+        <label>Academic year</label>
+        <input
+          id="annualYear"
+          type="number"
+          value="2026"
+        >
+      </div>
+
+      <button
+        class="primary"
+        onclick="loadAnnualTopPerformers()"
+      >
+        Generate Rankings
+      </button>
+
+      <button
+        class="secondary"
+        id="annualPdfButton"
+        onclick="downloadAnnualTopPerformersPdf()"
+        disabled
+      >
+        Download Prize Giving PDF
+      </button>
+
+    </div>
+
+    <p id="annualMessage" class="muted">
+      Choose a grade and generate rankings.
+    </p>
+
+    <div id="annualResults"></div>
+
+  </div>
+
+</section>
+
+
+<!-- SBA ASSESSMENT REPORTS -->
+<section id="sbaView" class="hidden">
+
+  <button
+    class="secondary back"
+    onclick="showAnalysis()"
+  >
+    ← All analysis options
+  </button>
+
+  <div class="eyebrow">
+    Administrator workspace
+  </div>
+
+  <h1>SBA Assessment Reports</h1>
+
+  <p>
+    View School-Based Assessment marks separately
+    from Term Examination marks.
+  </p>
+
+  <div class="card">
+
+    <div class="toolbar">
+
+      <div>
+        <label for="sbaGrade">Grade</label>
+        <select id="sbaGrade"></select>
+      </div>
+
+      <div>
+        <label for="sbaYear">Academic year</label>
+        <input
+          id="sbaYear"
+          type="number"
+          value="2026"
+          min="2020"
+          max="2100"
+        >
+      </div>
+
+      <div>
+        <label for="sbaTerm">Term</label>
+        <select id="sbaTerm">
+          <option>Term 1</option>
+          <option>Term 2</option>
+          <option>Term 3</option>
+        </select>
+      </div>
+
+      <button
+        class="primary"
+        onclick="loadSBAReport()"
+      >
+        Generate Report
+      </button>
+
+      <button
+        class="secondary"
+        id="sbaPdfButton"
+        onclick="downloadSBAReportPdf()"
+        disabled
+      >
+        Download PDF
+      </button>
+
+    </div>
+
+    <p id="sbaMessage" class="muted">
+      Select grade, year and term.
+    </p>
+
+    <div id="sbaResults"></div>
+
+  </div>
+
+</section>
+
 
 <!-- STUDENT REPORTS -->
 <section id="studentView" class="hidden">
@@ -523,7 +766,7 @@ tr.absent-row input[type="number"] { background: #edf0f4; color: #64748b; }
           <h2 id="reportName"></h2>
           <p id="reportMeta" class="muted"></p>
         </div>
-        <button class="secondary print-hide" onclick="window.print()">Print Report</button>
+        <div class="print-hide" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select id="individualReportTerm" style="width:auto" aria-label="Report type"><option value="all">Annual</option><option>Term 1</option><option>Term 2</option><option>Term 3</option></select><button class="secondary" onclick="downloadIndividualStudentPdf()">Download PDF</button><button class="secondary" onclick="window.print()">Print Report</button></div>
       </div>
 
       <div id="reportSummary" class="report-summary"></div>
@@ -703,7 +946,7 @@ function message(id, text, error = false) {
 
 function showOnly(id) {
   if (authRole!=="ADMIN" && id!=="teacherView") return;
-  ["teacherView", "analysisMenu", "subjectView", "termView", "studentView", "exportView", "accountsView"]
+  ["teacherView", "analysisMenu", "subjectView", "termView", "studentView","annualView","sbaView","distributionView","below40View", "exportView", "accountsView"]
     .forEach(name => el(name).classList.toggle("hidden", name !== id));
 
   el("marksNav").classList.toggle("active", id === "teacherView");
@@ -724,6 +967,7 @@ function copyGrades(targetId) {
   target.value = el("grade").value;
 }
 
+
 function openAnalysisSection(section) {
   if (section === "subject") {
     showOnly("subjectView");
@@ -731,11 +975,54 @@ function openAnalysisSection(section) {
     el("analysisYear").value = el("year").value;
     el("analysisTerm").value = el("term").value;
     loadAnalysis();
+
+  } else if (section === "below40") {
+    showOnly("below40View");
+    copyGrades("below40Grade");
+    el("below40Year").value = el("year").value;
+    el("below40Term").value = el("term").value;
+    loadBelow40();
+  } else if (section === "distribution") {
+    showOnly("distributionView");
+    copyGrades("distributionGrade");
+    el("distributionYear").value = el("year").value;
+    el("distributionTerm").value = el("term").value;
+    loadExamDistribution();
   } else if (section === "term") {
     showOnly("termView");
     copyGrades("termGrade");
     el("termYear").value = el("year").value;
     loadTermComparison();
+
+  
+} else if (section === "annual") {
+  showOnly("annualView");
+
+  copyGrades("annualGrade");
+
+  // Add All Grades without removing Grades 01–13.
+  const gradeSelect = el("annualGrade");
+
+  gradeSelect.add(
+    new Option("All Grades (01–13)", "ALL"),
+    0
+  );
+
+  gradeSelect.value = el("grade").value;
+
+  el("annualYear").value = el("year").value;
+
+  loadAnnualTopPerformers();
+
+  
+} else if (section === "sba") {
+  showOnly("sbaView");
+  copyGrades("sbaGrade");
+  el("sbaYear").value = el("year").value;
+  el("sbaTerm").value = el("term").value;
+  loadSBAReport();
+
+
   } else if (section === "student") {
     showOnly("studentView");
     copyGrades("reportGrade");
@@ -743,6 +1030,7 @@ function openAnalysisSection(section) {
     loadReportStudents();
   }
 }
+
 
 /* ========== INITIAL CONNECTION ========== */
 
@@ -764,7 +1052,7 @@ function init() {
       subjectsByGrade = data.subjectsByGrade || {};
       updateGradeSubjects();
 
-      el("mode").textContent = "Demo data loaded (browser only)";
+      el("mode").textContent = "Public demo · Browser data only";
       renderSubjects();
       refreshSubmissionStatus();
     })
@@ -827,29 +1115,58 @@ function renderSubjects() {
     : "No subjects available for this grade.";
 }
 
+
+function getAssessmentType() {
+  return document.getElementById("assessmentType").value;
+}
+
+
+
 function refreshSubmissionStatus() {
   const request = ++trackerRequest;
   const grade = el("grade").value;
   const year = el("year").value;
   const term = el("term").value;
+  const assessmentType = getAssessmentType();
 
   if (!live || !grade) return;
 
-  message("trackerMessage", "Checking saved marks...");
+  submissionStatus = null;
+  renderSubjects();
+
+  if (assessmentType === "SBA") {
+    message(
+      "trackerMessage",
+      "SBA selected. Choose a subject to check pending students."
+    );
+
+    el("trackerProgress").style.width = "0%";
+    el("trackerList").replaceChildren();
+    return;
+  }
+
+  message("trackerMessage", "Checking saved Exam marks...");
 
   google.script.run
     .withSuccessHandler(data => {
-      if (request !== trackerRequest ||
-          grade !== el("grade").value ||
-          year !== el("year").value ||
-          term !== el("term").value) return;
+      if (
+        request !== trackerRequest ||
+        grade !== el("grade").value ||
+        year !== el("year").value ||
+        term !== el("term").value ||
+        assessmentType !== getAssessmentType()
+      ) return;
 
       submissionStatus = data;
+
       const total = data.required || 0;
       const done = data.completed || 0;
 
-      message("trackerMessage",
-        done + " of " + total + " subject options completed.");
+      message(
+        "trackerMessage",
+        done + " of " + total +
+        " subject options completed (Exam)."
+      );
 
       el("trackerProgress").style.width =
         (total ? 100 * done / total : 0) + "%";
@@ -859,11 +1176,17 @@ function refreshSubmissionStatus() {
 
       for (const s of data.subjects || []) {
         const item = node("div", undefined, "status-item");
+
         item.append(
           node("strong", s.subject),
-          node("small", s.entered + " / " + s.expected + " marks recorded"),
+          node(
+            "small",
+            s.entered + " / " +
+            s.expected + " marks recorded"
+          ),
           node("em", s.status, s.status)
         );
+
         host.append(item);
       }
 
@@ -871,10 +1194,49 @@ function refreshSubmissionStatus() {
     })
     .withFailureHandler(err => {
       if (request !== trackerRequest) return;
-      message("trackerMessage", err.message, true);
+
+      message(
+        "trackerMessage",
+        err.message,
+        true
+      );
     })
-    .getSubmissionStatus(year, grade, term, authToken);
+    .getSubmissionStatus(
+      year,
+      grade,
+      term,
+      authToken
+    );
 }
+
+
+
+
+function assessmentTypeChanged() {
+  if (savingMarks) {
+    alert("Please wait until marks are saved.");
+    el("assessmentType").value =
+      el("assessmentType").dataset.previous || "EXAM";
+    return;
+  }
+
+  el("assessmentType").dataset.previous =
+    getAssessmentType();
+
+  students = [];
+  submissionStatus = null;
+
+  ++studentLoadRequest;
+  ++trackerRequest;
+
+  el("studentRows").replaceChildren();
+  el("submitButton").disabled = true;
+
+  go(1);
+  refreshSubmissionStatus();
+}
+
+
 
 function loadStudents() {
   if (!subject || !subjects.includes(subject)) {
@@ -886,6 +1248,9 @@ function loadStudents() {
   const year = el("year").value;
   const term = el("term").value;
   const selectedSubject = subject;
+  
+  const assessmentType = getAssessmentType();
+
   const request = ++studentLoadRequest;
 
   message("notice", "Checking existing marks...");
@@ -893,10 +1258,27 @@ function loadStudents() {
   google.script.run
     .withSuccessHandler(status => {
       if (request !== studentLoadRequest) return;
-      submissionStatus = status;
-      renderSubjects();
+      
+if (assessmentType !== getAssessmentType()) return;
 
-      const selected = (status.subjects || []).find(s => s.subject === selectedSubject);
+const selected = assessmentType === "SBA"
+  ? {
+      subject: selectedSubject,
+      entered: status.completed,
+      expected: status.total,
+      missingIds: (status.students || [])
+        .filter(s => s.status === "PENDING")
+        .map(s => String(s.id))
+    }
+  : (status.subjects || []).find(
+      s => s.subject === selectedSubject
+    );
+
+if (assessmentType === "EXAM") {
+  submissionStatus = status;
+  renderSubjects();
+}
+
       if (!selected) {
         alert("No enrolled students for this subject.");
         return;
@@ -914,7 +1296,8 @@ function loadStudents() {
           );
 
           el("selection").textContent =
-            grade + " · " + selectedSubject + " · " + term;
+            grade + " · " + selectedSubject + " · " +
+term + " · " + assessmentType;
 
           el("studentCount").textContent =
             students.length + " student(s) awaiting marks";
@@ -982,7 +1365,17 @@ function loadStudents() {
     .withFailureHandler(err => {
       if (request === studentLoadRequest) alert(err.message);
     })
-    .getSubmissionStatus(year, grade, term, authToken);
+    
+
+[assessmentType === "SBA"
+  ? "getSBAPendingStudents"
+  : "getSubmissionStatus"](
+    ...(assessmentType === "SBA"
+      ? [year, grade, term, selectedSubject, authToken]
+      : [year, grade, term, authToken])
+  );
+
+
 }
 
 function submitMarks() {
@@ -1023,12 +1416,16 @@ function submitMarks() {
   const button = el("submitButton");
   button.disabled = true;
   savingMarks = true;
-  const savedContext = {
-    year: el("year").value,
-    grade: el("grade").value,
-    term: el("term").value,
-    subject
-  };
+  
+const assessmentType = getAssessmentType();
+
+const savedContext = {
+  year: el("year").value,
+  grade: el("grade").value,
+  term: el("term").value,
+  subject
+};
+
 
   google.script.run
     .withSuccessHandler(result => {
@@ -1049,10 +1446,204 @@ function submitMarks() {
       message("notice", "Save failed: " + err.message, true);
       button.disabled = false;
     })
-    .saveMarks({
-      ...savedContext,
-      marks: entered
-    }, authToken);
+    
+[assessmentType === "SBA" ? "saveSBAMarks" : "saveMarks"]({
+  ...savedContext,
+  marks: entered
+}, authToken);
+
+}
+
+/* ========== BELOW-40 EXAM PERFORMANCE ========== */
+let below40Request = 0;
+let currentBelow40 = null;
+
+function loadBelow40() {
+  const request = ++below40Request;
+  const grade = el("below40Grade").value;
+  const year = el("below40Year").value;
+  const term = el("below40Term").value;
+  const chosenSubject = el("below40Subject").value || "ALL";
+  const host = el("below40Results");
+  host.replaceChildren();
+  currentBelow40 = null;
+  el("below40PdfButton").disabled = true;
+  if (!grade || !year) {
+    message("below40Message", "Choose a grade and academic year.", true);
+    return;
+  }
+  message("below40Message", "Loading Term Exam marks...");
+  google.script.run.withSuccessHandler(data => {
+    if (request !== below40Request) return;
+    const analysis = data.analysis || {};
+    const availableSubjects = (analysis.subjects || []).map(s => s.subject);
+    const subjectSelect = el("below40Subject");
+    subjectSelect.replaceChildren(new Option("All subjects", "ALL"),
+      ...availableSubjects.map(name => new Option(name, name)));
+    subjectSelect.value = availableSubjects.includes(chosenSubject) ? chosenSubject : "ALL";
+    const selected = subjectSelect.value;
+    const rows = [];
+    for (const student of analysis.students || []) {
+      for (const [subjectName, rawMark] of Object.entries(student.marks || {})) {
+        if (!availableSubjects.includes(subjectName)) continue;
+        if (selected !== "ALL" && subjectName !== selected) continue;
+        if (typeof rawMark !== "number" || !Number.isFinite(rawMark)) continue;
+        if (rawMark < 0 || rawMark >= 40) continue;
+        rows.push([String(student.id), String(student.name), subjectName, String(rawMark)]);
+      }
+    }
+    rows.sort((a, b) => a[2].localeCompare(b[2]) || Number(a[3]) - Number(b[3]) || a[1].localeCompare(b[1]));
+    const headings = ["Student ID", "Student name", "Subject", "Marks / 100"];
+    const table = node("table");
+    const thead = node("thead");
+    const tr = node("tr");
+    headings.forEach(h => tr.append(node("th", h)));
+    thead.append(tr);
+    const tbody = node("tbody");
+    rows.forEach(row => {
+      const tr = node("tr");
+      row.forEach(value => tr.append(node("td", value)));
+      tbody.append(tr);
+    });
+    table.append(thead, tbody);
+    const wrap = node("div", undefined, "tablewrap");
+    wrap.append(table);
+    host.append(node("h3", `${rows.length} below-40 result(s)`), wrap);
+    currentBelow40 = {grade, year, term, subject: selected, headings, rows};
+    el("below40PdfButton").disabled = false;
+    message("below40Message", `${grade} · ${term} · ${year} · ${selected === "ALL" ? "All subjects" : selected} · ${rows.length} below-40 result(s)`);
+  }).withFailureHandler(err => {
+    if (request !== below40Request) return;
+    message("below40Message", "Unable to load report: " + err.message, true);
+  }).getDashboardData(year, grade, term, authToken);
+}
+
+function downloadBelow40Pdf() {
+  const data = currentBelow40;
+  if (!data) return;
+  try {
+    const pdf = exportPdf(
+      `${data.grade} - Students Scoring Below 40`,
+      `Academic Year: ${data.year} | ${data.term} | ${data.subject === "ALL" ? "All subjects" : data.subject} | Term Exam only`,
+      data.headings, data.rows
+    );
+    const url = URL.createObjectURL(pdf);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Below_40_${exportSafeName(data.grade)}_${data.year}_${exportSafeName(data.term)}_${exportSafeName(data.subject)}.pdf`;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (err) {
+    message("below40Message", "PDF generation failed: " + err.message, true);
+  }
+}
+
+/* ========== EXAM MARKS DISTRIBUTION ========== */
+let distributionRequest = 0;
+let currentDistribution = null;
+
+function loadExamDistribution() {
+  const request = ++distributionRequest;
+  const grade = el("distributionGrade").value;
+  const year = el("distributionYear").value;
+  const term = el("distributionTerm").value;
+  const host = el("distributionResults");
+  host.replaceChildren();
+  currentDistribution = null;
+  el("distributionPdfButton").disabled = true;
+  if (!grade || !year) {
+    message("distributionMessage", "Choose a grade and academic year.", true);
+    return;
+  }
+  message("distributionMessage", "Loading exam marks...");
+  // Reuse the existing exam-only dashboard API. SBA data is not requested.
+  google.script.run.withSuccessHandler(data => {
+    if (request !== distributionRequest) return;
+    const analysis = data.analysis;
+    const students = analysis.students || [];
+    const ranges = [
+      { label: "0–34", min: 0, max: 35 },
+      { label: "35–49", min: 35, max: 50 },
+      { label: "50–64", min: 50, max: 65 },
+      { label: "65–74", min: 65, max: 75 },
+      { label: "75–100", min: 75, max: 101 }
+    ];
+    const subjects = analysis.subjects || [];
+    if (!subjects.length) {
+      message("distributionMessage", "No enrolled subjects found for this grade.");
+      return;
+    }
+    const table = node("table");
+    const thead = node("thead");
+    const heading = node("tr");
+    ["Subject", ...ranges.map(r => r.label), "Absent", "Pending", "Total enrolled"]
+      .forEach(label => heading.append(node("th", label)));
+    thead.append(heading);
+    const tbody = node("tbody");
+    for (const item of subjects) {
+      const counts = ranges.map(() => 0);
+      let absent = 0;
+      let pending = 0;
+      let enrolled = 0;
+      for (const student of students) {
+        const marks = student.marks || {};
+        const isEnrolled = Object.prototype.hasOwnProperty.call(marks, item.subject) ||
+          (student.missing || []).includes(item.subject);
+        if (!isEnrolled) continue;
+        enrolled++;
+        const mark = marks[item.subject];
+        if (mark === "AB" || mark === "ABSENT") absent++;
+        else if (typeof mark === "number" && Number.isFinite(mark) && mark >= 0 && mark <= 100) {
+          const index = ranges.findIndex(r => mark >= r.min && mark < r.max);
+          if (index !== -1) counts[index]++;
+        } else pending++;
+      }
+      const tr = node("tr");
+      [item.subject, ...counts, absent, pending, enrolled].forEach(v => tr.append(node("td", v)));
+      tbody.append(tr);
+    }
+    table.append(thead, tbody);
+    currentDistribution = { grade, year, term, headings: ["Subject", ...ranges.map(r => r.label), "Absent", "Pending", "Total enrolled"], rows: Array.from(tbody.rows, tr => Array.from(tr.cells, td => td.textContent)) };
+    el("distributionPdfButton").disabled = false;
+    const wrap = node("div", undefined, "tablewrap");
+    wrap.append(table);
+    host.append(wrap);
+    const warnings = analysis.warnings || {};
+    const warningCount = (warnings.duplicates || []).length + (warnings.invalidOrUnmatched || []).length;
+    message("distributionMessage", `${grade} · ${term} · ${year} · ${students.length} students` +
+      (warningCount ? ` · ${warningCount} invalid/duplicate record warning(s); excluded from counts.` : ""));
+  }).withFailureHandler(err => {
+    if (request !== distributionRequest) return;
+    message("distributionMessage", "Unable to load distribution: " + err.message, true);
+  }).getDashboardData(year, grade, term, authToken);
+}
+
+function downloadExamDistributionPdf() {
+  const data = currentDistribution;
+  if (!data) {
+    message("distributionMessage", "Generate the distribution first.", true);
+    return;
+  }
+  try {
+    const pdf = exportPdf(
+      `${data.grade} - Exam Marks Distribution`,
+      `Academic Year: ${data.year} | ${data.term} | Term Exam only`,
+      data.headings,
+      data.rows
+    );
+    const url = URL.createObjectURL(pdf);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Exam_Marks_Distribution_${exportSafeName(data.grade)}_${data.year}_${exportSafeName(data.term)}.pdf`;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (err) {
+    message("distributionMessage", "PDF generation failed: " + err.message, true);
+  }
 }
 
 /* ========== SUBJECT ANALYSIS ========== */
@@ -1259,6 +1850,454 @@ function renderTermComparison(data) {
   el("termNote").textContent = data.note || "";
 }
 
+
+/* ========== ANNUAL TOP PERFORMERS ========== */
+
+let annualRequest = 0;
+let annualData = null;
+
+
+function loadAnnualTopPerformers() {
+  if (authRole !== "ADMIN") return;
+
+  const request = ++annualRequest;
+  const year = el("annualYear").value;
+  const selectedGrade = el("annualGrade").value;
+
+  annualData = null;
+  el("annualPdfButton").disabled = true;
+  el("annualResults").replaceChildren();
+
+  // Existing single-grade functionality
+  if (selectedGrade !== "ALL") {
+    message("annualMessage", "Calculating annual subject rankings...");
+
+    google.script.run
+      .withSuccessHandler(data => {
+        if (request !== annualRequest) return;
+        annualData = data;
+        renderAnnualTopPerformers(data);
+      })
+      .withFailureHandler(err => {
+        if (request !== annualRequest) return;
+        message("annualMessage", err.message, true);
+      })
+      .getAnnualTopPerformers(year, selectedGrade, authToken);
+
+    return;
+  }
+
+  // All Grades: fetch each grade individually
+  const grades = Array.from(
+    el("annualGrade").options,
+    option => option.value
+  ).filter(grade => grade !== "ALL" && grade !== "");
+
+  const results = [];
+  let currentIndex = 0;
+
+  function loadNextGrade() {
+    if (request !== annualRequest) return;
+
+    if (currentIndex >= grades.length) {
+      annualData = {
+        allGrades: true,
+        year,
+        grades: results
+      };
+
+      const ready = results.filter(r => r.ready).length;
+
+      message(
+        "annualMessage",
+        `Loaded ${results.length} grades. ` +
+        `${ready} ready; ${results.length - ready} incomplete.`
+      );
+
+      const host = el("annualResults");
+      host.replaceChildren();
+
+      for (const gradeData of results) {
+        const block = node("div", undefined, "card");
+
+        block.append(
+          node("h2", gradeData.grade),
+          node(
+            "p",
+            gradeData.ready
+              ? "Rankings ready for prize giving."
+              : "Incomplete examination results or validation warnings."
+          )
+        );
+
+        host.append(block);
+      }
+
+      // Enable combined PDF only when all 13 grades are complete.
+const expectedGrades = Array.from(
+  { length: 13 },
+  (_, i) => `Grade ${String(i + 1).padStart(2, "0")}`
+);
+
+const allGradesReady =
+  results.length === 13 &&
+  new Set(results.map(g => g.grade)).size === 13 &&
+  expectedGrades.every(grade =>
+    results.some(g => g.grade === grade && g.ready === true)
+  );
+
+el("annualPdfButton").disabled = !allGradesReady;
+return;
+}
+
+    const grade = grades[currentIndex];
+
+    message(
+      "annualMessage",
+      `Loading ${grade} (${currentIndex + 1}/${grades.length})...`
+    );
+
+    google.script.run
+      .withSuccessHandler(data => {
+        if (request !== annualRequest) return;
+
+        results.push(data);
+        currentIndex++;
+        loadNextGrade();
+      })
+      .withFailureHandler(err => {
+        if (request !== annualRequest) return;
+
+        message(
+          "annualMessage",
+          `Unable to load ${grade}: ${err.message}`,
+          true
+        );
+      })
+      .getAnnualTopPerformers(year, grade, authToken);
+  }
+
+  loadNextGrade();
+}
+
+
+function renderAnnualTopPerformers(data) {
+  const host = el("annualResults");
+  host.replaceChildren();
+
+  const pending = (data.subjects || [])
+    .filter(s => s.pending > 0);
+
+  const warningCount = (data.warnings || []).length;
+
+  const complete = data.ready;
+
+  message(
+    "annualMessage",
+    complete
+      ? `${data.grade} · ${data.year}: Rankings ready.`
+      : `Not ready: ${pending.length} subjects have missing term results; ${warningCount} validation warnings.`,
+    !complete
+  );
+
+  el("annualPdfButton").disabled = !complete;
+
+  if (warningCount) {
+    host.append(
+      node(
+        "p",
+        `Validation warnings: ${data.warnings.slice(0, 5).join(" | ")}`,
+        "muted"
+      )
+    );
+  }
+
+  for (const subject of data.subjects || []) {
+    const block = node("div", undefined, "card");
+
+    block.append(node("h2", subject.subject));
+
+    if (subject.pending > 0) {
+      block.append(
+        node(
+          "p",
+          `${subject.pending} of ${subject.enrolled} students have incomplete results.`,
+          "muted"
+        )
+      );
+    } else if (!subject.top.length) {
+      block.append(
+        node("p", "No eligible students.", "muted")
+      );
+    } else if (warningCount) {
+      block.append(
+        node(
+          "p",
+          "Resolve validation warnings before publishing.",
+          "muted"
+        )
+      );
+    } else {
+      const wrap = node("div", undefined, "tablewrap");
+      const table = document.createElement("table");
+
+      const thead = document.createElement("thead");
+      const headerRow = document.createElement("tr");
+
+      [
+        "Rank",
+        "Student ID",
+        "Student name",
+        "Term 1",
+        "Term 2",
+        "Term 3",
+        "Annual average"
+      ].forEach(heading => {
+        headerRow.append(node("th", heading));
+      });
+
+      thead.append(headerRow);
+      table.append(thead);
+
+      const tbody = document.createElement("tbody");
+
+      subject.top.forEach(student => {
+        const tr = document.createElement("tr");
+
+        const values = [
+          student.rank,
+          student.id,
+          student.name,
+          ...student.terms.map(m =>
+            m === "AB"
+              ? "AB (0)"
+              : Number(m).toFixed(2)
+          ),
+          student.annualAverage.toFixed(2)
+        ];
+
+        values.forEach(value => {
+          tr.append(node("td", value));
+        });
+
+        tbody.append(tr);
+      });
+
+      table.append(tbody);
+      wrap.append(table);
+      block.append(wrap);
+    }
+
+    host.append(block);
+  }
+
+  host.append(node("p", data.note, "muted"));
+}
+
+
+function downloadAllGradesAnnualPdf() {
+  if (authRole !== "ADMIN" || !annualData?.allGrades) return;
+
+  const data = annualData;
+  const grades = data.grades || [];
+
+  // Require exactly 13 complete grade results.
+  const expectedGrades = Array.from(
+    { length: 13 },
+    (_, i) => `Grade ${String(i + 1).padStart(2, "0")}`
+  );
+
+  const actualGrades = grades.map(g => g.grade);
+
+  const allReady =
+    grades.length === 13 &&
+    new Set(actualGrades).size === 13 &&
+    expectedGrades.every(grade => actualGrades.includes(grade)) &&
+    grades.every(g => g.ready === true);
+
+  if (!allReady) {
+    message(
+      "annualMessage",
+      "Cannot download: all 13 grades must have complete, validated results.",
+      true
+    );
+    return;
+  }
+
+  const rows = [];
+
+  for (const gradeData of grades) {
+    for (const subject of gradeData.subjects || []) {
+      for (const student of subject.top || []) {
+        rows.push([
+          gradeData.grade,
+          subject.subject,
+          String(student.rank),
+          String(student.id),
+          student.name,
+          ...student.terms.map(m =>
+            m === "AB" ? "AB" : Number(m).toFixed(2)
+          ),
+          Number(student.annualAverage).toFixed(2)
+        ]);
+      }
+    }
+  }
+
+  if (!rows.length) {
+    message("annualMessage", "No rankings available to export.", true);
+    return;
+  }
+
+  const pdf = exportPdf(
+    "Annual Subject Top Performers - All Grades",
+    `Prize Giving | Academic Year: ${data.year} | Grades 01-13`,
+    [
+      "Grade",
+      "Subject",
+      "Rank",
+      "Student ID",
+      "Student Name",
+      "Term 1",
+      "Term 2",
+      "Term 3",
+      "Annual Avg."
+    ],
+    rows
+  );
+
+  const url = URL.createObjectURL(pdf);
+  const a = document.createElement("a");
+
+  a.href = url;
+  a.download = `Annual_Top_Performers_All_Grades_${data.year}.pdf`;
+
+  document.body.append(a);
+  a.click();
+  a.remove();
+
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
+
+function downloadAnnualTopPerformersPdf() {
+  if (annualData?.allGrades) {
+  downloadAllGradesAnnualPdf();
+  return;
+}
+  if (
+    authRole !== "ADMIN" ||
+    !annualData ||
+    !annualData.ready
+  ) return;
+
+  const data = annualData;
+  const rows = [];
+
+  for (const subject of data.subjects) {
+    for (const student of subject.top) {
+      rows.push([
+        subject.subject,
+        String(student.rank),
+        String(student.id),
+        student.name,
+        ...student.terms.map(m =>
+          m === "AB"
+            ? "AB"
+            : Number(m).toFixed(2)
+        ),
+        student.annualAverage.toFixed(2)
+      ]);
+    }
+  }
+
+  if (!rows.length) {
+    message(
+      "annualMessage",
+      "No ranked students to export.",
+      true
+    );
+    return;
+  }
+
+  const pdf = exportPdf(
+    `${data.grade} - Annual Subject Top Performers`,
+    `Prize Giving | Academic year: ${data.year} | Registered students: ${data.studentCount}`,
+    [
+      "Subject",
+      "Rank",
+      "Student ID",
+      "Student name",
+      "Term 1",
+      "Term 2",
+      "Term 3",
+      "Annual avg."
+    ],
+    rows
+  );
+
+  const blob = pdf instanceof Blob
+    ? pdf
+    : new Blob(
+        [pdf],
+        { type: "application/pdf" }
+      );
+
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+
+  a.href = url;
+
+  a.download =
+    `Annual_Top_Performers_${data.year}_` +
+    `${exportSafeName(data.grade).replace(/ /g, "_")}.pdf`;
+
+  document.body.append(a);
+  a.click();
+  a.remove();
+
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 60000);
+}
+
+
+/* ========== GRADE RANKINGS (TERM EXAMS ONLY) ========== */
+function gradeRankMap(records, scoreOf, eligible = () => true) {
+  const valid = records.filter(s => eligible(s) && Number.isFinite(Number(scoreOf(s))));
+  valid.sort((a,b) => Number(scoreOf(b)) - Number(scoreOf(a)));
+  const ranks = new Map();
+  let previous = null, rank = 0;
+  valid.forEach((s,i) => {
+    const score = Number(scoreOf(s));
+    if (previous === null || Math.abs(score - previous) > 1e-7) rank = i + 1;
+    ranks.set(String(s.id), rank);
+    previous = score;
+  });
+  return ranks;
+}
+function termRankMap(analysis) {
+  return gradeRankMap(analysis.students || [], s => s.totalRecorded,
+    s => s.complete === true && Number(s.expected) > 0);
+}
+function annualRankMap(analyses) {
+  const scores = new Map();
+  for (const analysis of analyses) {
+    for (const s of analysis.students || []) {
+      const id = String(s.id);
+      if (!scores.has(id)) scores.set(id, {id, total:0, count:0, complete:true});
+      const item = scores.get(id);
+      item.count++;
+      if (s.complete !== true || !Number(s.expected)) item.complete = false;
+      else item.total += Number(s.totalRecorded);
+    }
+  }
+  return gradeRankMap([...scores.values()], s => s.total,
+    s => s.complete && s.count === 3);
+}
+function rankText(rank) { return rank === undefined ? 'Pending' : 'Rank ' + rank; }
+
 /* ========== STUDENT REPORTS ========== */
 
 function loadReportStudents() {
@@ -1289,7 +2328,10 @@ function loadReportStudents() {
     .getReportStudents(el("reportGrade").value, authToken);
 }
 
+let currentStudentReportData = null;
+let currentStudentAnalyses = [];
 function loadStudentReport() {
+  currentStudentReportData = null; currentStudentAnalyses = [];
   const id = el("reportStudent").value;
 
   if (!id) {
@@ -1308,7 +2350,21 @@ function loadStudentReport() {
       button.disabled = false;
 
       try {
-        renderStudentReport(data);
+        const year = el("reportYear").value;
+        const grade = el("reportGrade").value;
+        Promise.all(['Term 1','Term 2','Term 3'].map(term =>
+          exportCall('getAnalysis',year,grade,term)
+        )).then(analyses => {
+          if (request !== studentReportRequest) return;
+          currentStudentReportData = data; currentStudentAnalyses = analyses;
+          const rank = annualRankMap(analyses).get(String(data.student.id));
+          renderStudentReport(data, rank);
+        }).catch(err => {
+          if (request !== studentReportRequest) return;
+          currentStudentReportData = data;
+          renderStudentReport(data);
+          message("reportMessage", "Report loaded; rank unavailable: " + err.message, true);
+        });
       } catch (err) {
         message("reportMessage", "Display error: " + err.message, true);
       }
@@ -1325,13 +2381,15 @@ function loadStudentReport() {
     );
 }
 
-function renderStudentReport(data) {
+function renderStudentReport(data, annualRank) {
   message("reportMessage", "Report loaded.");
   el("reportContent").classList.remove("hidden");
 
   el("reportName").textContent = data.student.name;
   el("reportMeta").textContent =
-    data.student.id + " · " + data.grade + " · " + data.year;
+    data.student.id + " · " + data.grade + " · " + data.year +
+    " · Annual average: " + (data.annualAverage ?? "Pending") +
+    " · Annual rank: " + rankText(annualRank);
 
   const summary = el("reportSummary");
   summary.replaceChildren();
@@ -1410,7 +2468,7 @@ function drawAverageChart(hostId, terms) {
   const host = el(hostId);
   host.replaceChildren();
 
-  const ns = "http://www.w3.org/2000/svg";
+  const ns = "http:" + "/" + "/www.w3.org/2000/svg"; 
   const svg = document.createElementNS(ns, "svg");
   svg.setAttribute("viewBox", "0 0 640 280");
   svg.setAttribute("role", "img");
@@ -1508,6 +2566,31 @@ function drawAverageChart(hostId, terms) {
   host.append(svg);
 }
 
+function downloadIndividualStudentPdf() {
+  const r = currentStudentReportData;
+  if (!r) { message('reportMessage','Load a student first.',true); return; }
+  const type = el('individualReportTerm').value;
+  const year = el('reportYear').value, grade = el('reportGrade').value, id = String(r.student.id);
+  let pdf;
+  if (type === 'all') {
+    const rank = currentStudentAnalyses.length === 3 ? annualRankMap(currentStudentAnalyses).get(id) : undefined;
+    const rows = (r.subjects || []).map(subject => [subject,...r.terms.map(t => (t.marks || []).find(m => m.subject === subject)?.mark ?? 'Pending')]);
+    rows.push(['Term average',...r.terms.map(t => t.average ?? 'Pending')]);
+    pdf = exportPdf(`Student Performance - ${r.student.name}`,`Year: ${year} | Grade: ${grade} | ID: ${id} | Annual average: ${r.annualAverage ?? 'Pending'} | Annual rank: ${rankText(rank)} | AB = absent`,['Subject','Term 1','Term 2','Term 3'],rows,{type:'line',title:'Student average by term (0-100)',items:r.terms.map(t=>({label:t.term,value:t.complete?t.average:null}))});
+  } else {
+    const t = (r.terms || []).find(t => t.term === type);
+    if (!t) { message('reportMessage','Selected term unavailable.',true);return; }
+    const analysis = currentStudentAnalyses.find((a,i) => ['Term 1','Term 2','Term 3'][i] === type);
+    const rank = analysis ? termRankMap(analysis).get(id) : undefined;
+    const rows = (r.subjects || []).map(subject => [subject,(t.marks || []).find(m => m.subject === subject)?.mark ?? 'Pending']);
+    rows.push(['Total marks',t.complete ? t.totalRecorded : 'Pending'],['Average marks',t.average ?? 'Pending'],['Term rank',rankText(rank)]);
+    pdf = exportPdf(`${type} Student Performance - ${r.student.name}`,`Year: ${year} | Grade: ${grade} | ID: ${id} | ${type} | Average: ${t.average ?? 'Pending'} | Rank: ${rankText(rank)} | AB = absent`,['Subject','Mark / 100'],rows);
+  }
+  const url = URL.createObjectURL(pdf), a = document.createElement('a');
+  a.href=url;a.download=`Student_${exportSafeName(id)}_${year}_${type === 'all' ? 'Annual' : type.replace(/ /g,'_')}.pdf`;
+  document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
+
 /* ========== BULK REPORT EXPORT ========== */
 let exportRunning = false;
 // Retry transient Google Apps Script connection failures, not permanent data errors.
@@ -1548,7 +2631,7 @@ function exportLatin(value) {
 function exportPdfEscape(value) {
   return exportLatin(value).replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
 }
-function exportPdf(title, metadata, headings, rows, chart = null) {
+function exportPdf(title, metadata, headings, rows, chart = null, subjectComparison = null) {
   // Professional A4 landscape layout, PDF vector charts, no external libraries.
   const W = 841.89, H = 595.28, M = 40, RIGHT = W - M;
   const NAVY = [0.075, 0.16, 0.30], BLUE = [0.15, 0.36, 0.72];
@@ -1564,8 +2647,22 @@ function exportPdf(title, metadata, headings, rows, chart = null) {
   const commandsByPage = [];
   const columnCount = headings.length;
   const contentWidth = W - 2 * M;
-  const baseWidths = columnCount === 8 ? [230, 76, 76, 72, 76, 78, 83, 90] :
-    columnCount === 4 ? [335, 142, 142, 142] : Array(columnCount).fill(contentWidth / columnCount);
+  
+  
+const baseWidths =
+  columnCount === 9 && headings[0] === "Grade"
+    ? [65, 110, 42, 75, 155, 65, 65, 65, 85]
+    : columnCount === 8 && headings[0] === "Subject"
+      ? [116, 44, 90, 182, 77, 77, 77, 98]
+      : columnCount === 8
+        ? [230, 76, 76, 72, 76, 78, 83, 90]
+        : columnCount === 4
+          ? [335, 142, 142, 142]
+          : Array(columnCount).fill(
+              contentWidth / columnCount
+            );
+
+
   const widthFactor = contentWidth / baseWidths.reduce((a, b) => a + b, 0);
   const widths = baseWidths.map(v => v * widthFactor);
   const xPositions = [M];
@@ -1621,7 +2718,7 @@ function exportPdf(title, metadata, headings, rows, chart = null) {
   }
   function footer(pageNum, totalPages) {
     let out = rule(M, 42, RIGHT, 42);
-    out += text('Generated from fictional demo marks  |  AB: Absent  |  Pending: Not recorded', M, 27, 7.3, false, MUTED);
+    out += text('Generated from saved school marks  |  AB: Absent  |  Pending: Not recorded', M, 27, 7.3, false, MUTED);
     out += text(`Page ${pageNum} of ${totalPages}`, RIGHT - 72, 27, 8, true, MUTED);
     return out;
   }
@@ -1698,26 +2795,129 @@ function exportPdf(title, metadata, headings, rows, chart = null) {
   // Allocate rows by actual vertical space, avoiding chart/table/footer collisions.
   let remaining = 0;
   const dataRows = Array.isArray(rows) ? rows : [];
+  
+function subjectHeading(subject, y) {
+  let out = rect(M, y - 8, contentWidth, 27, PALE);
+  out += text(
+    fitted(subject, contentWidth - 20, 11),
+    M + 10,
+    y,
+    11,
+    true,
+    NAVY
+  );
+  return out;
+}
+
   do {
     const firstPage = commandsByPage.length === 0;
     let out = header(commandsByPage.length + 1);
     if (firstPage && chart) out += chartBlock(chart);
     let y = firstPage && chart ? 205 : H - 153;
+    
+const subjectMode = dataRows.some(
+  row => row && row.__subjectHeading === true
+);
+
+if (!subjectMode) {
+  out += tableHeader(y);
+  y -= 35;
+}
+
+let indexOnPage = 0;
+let rowsInSection = 0;
+
+while (remaining < dataRows.length) {
+  const row = dataRows[remaining];
+
+  if (subjectMode && row.__subjectHeading === true) {
+    // Keep the subject title, table header and
+    // at least one student row together.
+    if (y - 100 < 60) break;
+
+    if (indexOnPage > 0) y -= 15;
+
+    out += subjectHeading(row.subject, y);
+    y -= 42;
+
     out += tableHeader(y);
     y -= 35;
-    let indexOnPage = 0;
-    while (remaining < dataRows.length) {
-      const h = rowHeight(dataRows[remaining]);
-      if (y - h < 60) break;
-      out += tableRow(dataRows[remaining], y, indexOnPage, h);
-      y -= h;
-      remaining++;
-      indexOnPage++;
-    }
+
+    rowsInSection = 0;
+    remaining++;
+    indexOnPage++;
+    continue;
+  }
+
+  const h = rowHeight(row);
+
+  if (y - h < 60) break;
+
+  // Repeat column headers when a subject
+  // continues onto another PDF page.
+  if (subjectMode && indexOnPage === 0) {
+    out += tableHeader(y);
+    y -= 35;
+  }
+
+  out += tableRow(row, y, rowsInSection, h);
+
+  y -= h;
+  remaining++;
+  indexOnPage++;
+  rowsInSection++;
+}
+
     if (indexOnPage === 0 && remaining < dataRows.length)
       throw new Error('Unable to fit report row on the PDF page.');
     commandsByPage.push(out);
   } while (remaining < dataRows.length || commandsByPage.length === 0);
+
+  // Additional landscape pages for term-by-term subject averages.
+  // These are separate pages so the original class chart and tables never overlap.
+  if (subjectComparison && Array.isArray(subjectComparison.items) && subjectComparison.items.length) {
+    const subjects = subjectComparison.items;
+    const colors = [[0.15, 0.36, 0.72], [0.10, 0.61, 0.50], [0.91, 0.53, 0.19]];
+    const terms = ['Term 1', 'Term 2', 'Term 3'];
+    const perPage = 12;
+    const plotX = M + 168, plotWidth = contentWidth - 210;
+    const plotTop = H - 189, rowSpacing = 29;
+    const validAverage = v => v !== null && v !== undefined && v !== '' &&
+      Number.isFinite(Number(v));
+    for (let start = 0; start < subjects.length; start += perPage) {
+      const subset = subjects.slice(start, start + perPage);
+      let out = header(commandsByPage.length + 1);
+      out += text('SUBJECT AVERAGES BY TERM (0-100)', M, H - 140, 11, true, NAVY);
+      terms.forEach((term, i) => {
+        const lx = M + 355 + i * 118;
+        out += rect(lx, H - 143, 10, 10, colors[i]);
+        out += text(term, lx + 15, H - 141, 8, false, INK);
+      });
+      [0, 25, 50, 75, 100].forEach(tick => {
+        const x = plotX + plotWidth * tick / 100;
+        out += rule(x, plotTop + 12, x, plotTop - (perPage - 1) * rowSpacing - 24, LINE, .5);
+        out += text(String(tick), x - 8, plotTop + 19, 7.2, false, MUTED);
+      });
+      subset.forEach((subject, i) => {
+        const y = plotTop - i * rowSpacing - 4;
+        out += text(fitted(subject.label, 155, 8.2), M + 7, y - 9, 8.2, true, INK);
+        const averages = Array.isArray(subject.values) ? subject.values : [];
+        for (let termIndex = 0; termIndex < 3; termIndex++) {
+          const value = averages[termIndex];
+          const barY = y - termIndex * 7.2;
+          if (validAverage(value)) {
+            const width = plotWidth * Math.max(0, Math.min(100, Number(value))) / 100;
+            if (width > 0) out += rect(plotX, barY, width, 5.5, colors[termIndex]);
+            out += text(Number(value).toFixed(1), Math.min(plotX + width + 4, RIGHT - 28), barY, 6.5, false, INK);
+          } else {
+            out += text('-', plotX + 3, barY, 7, false, MUTED);
+          }
+        }
+      });
+      out += text('Dash (-) indicates Pending / not recorded; zero is a recorded average.', M, 57, 7.2, false, MUTED);
+      commandsByPage.push(out);
+    }
+  }
 
   commandsByPage.forEach((commands, i) => {
     const bytes = exportEncoder.encode(commands + footer(i + 1, commandsByPage.length));
@@ -1833,11 +3033,13 @@ async function startReportExport() {
     message('exportMessage', 'Loading grades...');
     const setup = await exportCall('getSetup');
     const scope = el('exportScope').value;
+    const reportType = el('exportReportType').value;
+    const isTermExport = reportType !== 'all';
     const grades = (setup.grades || []).filter(g =>
-      /^Grade (0[6-9]|1[0-3])$/.test(g) && (scope === 'all' || g === scope));
+      /^Grade (0[1-9]|1[0-3])$/.test(g) && (scope === 'all' || g === scope));
     if (!grades.length) throw new Error('No matching grades available.');
     // Estimate progress; update total after each grade roster is loaded.
-    total = grades.length * 5;
+    total = grades.length * (isTermExport ? 2 : 5);
     const addFailure = (label, err) => {
       const detail = `${label}: ${err?.message || err}`;
       failures.push(detail);
@@ -1863,47 +3065,76 @@ async function startReportExport() {
         gradeCount++;
         success++;
       };
-      for (const term of terms) {
+      const gradeAnalyses = [];
+      if (!isTermExport) for (const term of terms) {
         const label = `${grade} / ${term} / subject analysis`;
         try {
           const a = await exportCall('getAnalysis', year, grade, term);
+          gradeAnalyses.push(a);
+          const termRanks = termRankMap(a);
           const rows = (a.subjects || []).map(s => [s.subject,s.enrolled,s.entered,s.absent,s.pending,s.average,s.highest,s.lowest]);
-          rows.push(...(a.students || []).map(s => [s.id+' '+s.name,s.expected,s.entered,s.absent,s.expected-s.entered,s.average,s.totalRecorded,s.complete?'Complete':'Pending']));
+          rows.push(...(a.students || []).map(s => [s.id+' '+s.name,s.expected,s.entered,s.absent,s.expected-s.entered,s.average,s.totalRecorded,rankText(termRanks.get(String(s.id)))]));
           const pdf = exportPdf(`${grade} - ${term} - Subject-wise Analysis`,
             `Academic year: ${year} | Students: ${a.studentCount} | Class average: ${a.classAverage ?? 'Pending'}`,
-            ['Subject / Student','Expected','Entered','Absent','Pending','Average','High / Total','Low / Status'], rows,
+            ['Subject / Student','Expected','Entered','Absent','Pending','Average','High / Total','Low / Rank'], rows,
             {type:'bar',title:'Subject averages (0-100)',items:(a.subjects || []).map(s=>({label:s.subject,value:s.average}))});
           record(`1. Subjectwise Analysis/${exportSafeName(grade)} - ${term}.pdf`,pdf);
         } catch (err) { addFailure(label,err); }
         exportUpdate(++done,total,`${label} (${failures.length} errors)`);
         await exportSleep(70);
       }
-      try {
+      if (!isTermExport) try {
         const c = await exportCall('getTermComparison',year,grade);
         const rows = (c.subjects || []).map(s => [s.subject,...s.terms.map(t => t.average ?? 'Pending')]);
         rows.unshift(['Class average',...c.terms.map(t => t.classAverage ?? 'Pending')]);
         rows.push(['Marks entered',...c.terms.map(t => t.entered+'/'+t.expected)]);
         const pdf = exportPdf(`${grade} - Term-wise Comparison`,`Academic year: ${year} | Registered students: ${c.studentCount}`,
           ['Subject','Term 1','Term 2','Term 3'],rows,
-          {type:'line',title:'Class average by term (0-100)',items:c.terms.map(t=>({label:t.term,value:t.classAverage}))});
+          {type:'line',title:'Class average by term (0-100)',items:c.terms.map(t=>({label:t.term,value:t.classAverage}))},
+          {items:(c.subjects || []).map(s=>({label:s.subject,values:(s.terms || []).map(t=>t.average)}))});
         record(`2. Termwise Analysis/${exportSafeName(grade)}.pdf`,pdf);
       } catch (err) { addFailure(`${grade} term comparison`,err); }
-      exportUpdate(++done,total,`${grade} / term comparison (${failures.length} errors)`);
+      if (!isTermExport) exportUpdate(++done,total,`${grade} / term comparison (${failures.length} errors)`);
+      if (isTermExport) {
+        try { gradeAnalyses.push(await exportCall('getAnalysis', year, grade, reportType)); }
+        catch (err) { addFailure(`${grade} / ${reportType} ranking analysis`, err); }
+        exportUpdate(++done,total,`${grade} / ${reportType} ranking analysis (${failures.length} errors)`);
+      }
+      const annualRanks = !isTermExport && gradeAnalyses.length === 3 ? annualRankMap(gradeAnalyses) : new Map();
+      const selectedTermRanks = isTermExport && gradeAnalyses.length === 1 ? termRankMap(gradeAnalyses[0]) : new Map();
       for (let i = 0; i < students.length; i++) {
         const student = students[i];
         const label = `${grade} / student ${i+1} of ${students.length} (${student.id})`;
         try {
           const r = await exportCall('getStudentReport',year,grade,student.id);
-          const rows = (r.subjects || []).map(subject => [subject,...r.terms.map(t => {
-            const mark = (t.marks || []).find(m => m.subject === subject);
-            return mark?.mark ?? 'Pending';
-          })]);
-          rows.push(['Term average',...r.terms.map(t => t.average ?? 'Pending')]);
-          const pdf = exportPdf(`Student Performance - ${r.student.name}`,
-            `Year: ${year} | Grade: ${grade} | ID: ${r.student.id} | Annual average: ${r.annualAverage ?? 'Pending'} | AB = absent`,
-            ['Subject','Term 1','Term 2','Term 3'],rows,
-            {type:'line',title:'Student average by term (0-100)',items:r.terms.map(t=>({label:t.term,value:t.complete?t.average:null}))});
-          record(`3. Student Performance Reports/${exportSafeName(grade)}/${exportSafeName(student.id)}.pdf`,pdf);
+          let pdf, filename;
+          if (isTermExport) {
+            const t = (r.terms || []).find(t => t.term === reportType);
+            if (!t) throw new Error(`Missing ${reportType} data for student ${student.id}`);
+            const rows = (r.subjects || []).map(subject => {
+              const mark = (t.marks || []).find(m => m.subject === subject);
+              return [subject, mark?.mark ?? 'Pending'];
+            });
+            rows.push(['Total marks', t.complete ? t.totalRecorded : 'Pending']);
+            rows.push(['Average marks', t.average ?? 'Pending']);
+            rows.push(['Term rank', rankText(selectedTermRanks.get(String(r.student.id)))]);
+            pdf = exportPdf(`${reportType} Student Performance - ${r.student.name}`,
+              `Year: ${year} | Grade: ${grade} | ID: ${r.student.id} | ${reportType} | Average: ${t.average ?? 'Pending'} | Rank: ${rankText(selectedTermRanks.get(String(r.student.id)))} | AB = absent`,
+              ['Subject','Mark / 100'], rows);
+            filename = `Student Reports/${exportSafeName(grade)}/${exportSafeName(reportType)}/${exportSafeName(student.id)}.pdf`;
+          } else {
+            const rows = (r.subjects || []).map(subject => [subject,...r.terms.map(t => {
+              const mark = (t.marks || []).find(m => m.subject === subject);
+              return mark?.mark ?? 'Pending';
+            })]);
+            rows.push(['Term average',...r.terms.map(t => t.average ?? 'Pending')]);
+            pdf = exportPdf(`Student Performance - ${r.student.name}`,
+              `Year: ${year} | Grade: ${grade} | ID: ${r.student.id} | Annual average: ${r.annualAverage ?? 'Pending'} | Annual rank: ${rankText(annualRanks.get(String(r.student.id)))} | AB = absent`,
+              ['Subject','Term 1','Term 2','Term 3'],rows,
+              {type:'line',title:'Student average by term (0-100)',items:r.terms.map(t=>({label:t.term,value:t.complete?t.average:null}))});
+            filename = `3. Student Performance Reports/${exportSafeName(grade)}/${exportSafeName(student.id)}.pdf`;
+          }
+          record(filename,pdf);
         } catch (err) { addFailure(label,err); }
         exportUpdate(++done,total,`${label} (${failures.length} errors)`);
         // Yield to the browser between reports to keep the page responsive.
@@ -1913,7 +3144,7 @@ async function startReportExport() {
         message('exportMessage', `${grade}: preparing ${gradeCount} PDFs for download...`);
         try {
           const gradeBlob = await gradeZip.generateAsync();
-          exportDownloadLink(gradeBlob,`School_Reports_${year}_${exportSafeName(grade).replace(/ /g,'_')}.zip`,
+          exportDownloadLink(gradeBlob,`School_Reports_${year}_${exportSafeName(grade).replace(/ /g,'_')}_${isTermExport ? exportSafeName(reportType).replace(/ /g,'_') : 'All_Reports'}.zip`,
             `Download ${grade} (${gradeCount} PDFs)`);
         } catch (err) { addFailure(`${grade} ZIP packaging`,err); }
       }
@@ -1930,7 +3161,7 @@ async function startReportExport() {
     if (success) {
       message('exportMessage','Preparing combined ZIP file...');
       const combined = await allZip.generateAsync();
-      exportDownloadLink(combined,`School_Academic_Reports_${year}.zip`,
+      exportDownloadLink(combined,`School_Academic_Reports_${year}_${scope === 'all' ? 'All_Grades' : exportSafeName(scope).replace(/ /g,'_')}_${isTermExport ? exportSafeName(reportType).replace(/ /g,'_') : 'All_Reports'}.zip`,
         `Download combined ZIP (${success} PDFs)`,failures.length === 0);
       el('exportProgress').style.width = '100%';
       message('exportMessage', failures.length
@@ -1981,6 +3212,217 @@ el("reportYear").addEventListener("change", () => {
 /* ========== START APPLICATION ========== */
 
 // Application initialization occurs only after a valid login.
+
+/* ========== SBA ASSESSMENT REPORTS UI ========== */
+
+let currentSBAReport = null;
+let sbaReportRequest = 0;
+
+function loadSBAReport() {
+  const request = ++sbaReportRequest;
+
+  const year = el("sbaYear").value;
+  const grade = el("sbaGrade").value;
+  const term = el("sbaTerm").value;
+
+  currentSBAReport = null;
+  el("sbaPdfButton").disabled = true;
+  el("sbaResults").replaceChildren();
+
+  if (!grade) {
+    message("sbaMessage", "Select a grade.", true);
+    return;
+  }
+
+  message("sbaMessage", "Loading SBA assessment results...");
+
+  google.script.run
+    .withSuccessHandler(data => {
+      if (request !== sbaReportRequest) return;
+
+      currentSBAReport = data;
+      renderSBAReport(data);
+
+      el("sbaPdfButton").disabled = false;
+    })
+    .withFailureHandler(error => {
+      if (request !== sbaReportRequest) return;
+
+      message(
+        "sbaMessage",
+        error.message || String(error),
+        true
+      );
+    })
+    .getSBAReport(year, grade, term, authToken);
+}
+
+function renderSBAReport(data) {
+  const host = el("sbaResults");
+  host.replaceChildren();
+
+  message(
+    "sbaMessage",
+    `${data.grade} · ${data.term} · ${data.year} | ` +
+    `${data.recorded} recorded · ${data.pending} pending`
+  );
+
+  if (data.warnings && data.warnings.length) {
+    const warning = node(
+      "p",
+      `${data.warnings.length} validation warning(s). ` +
+      "Please review the stored SBA records.",
+      "message error"
+    );
+    host.append(warning);
+  }
+
+  if (!data.results || !data.results.length) {
+    host.append(
+      node("p", "No enrolled students found.")
+    );
+    return;
+  }
+
+  const summary = node("div", undefined, "card");
+
+  summary.append(
+    node("h3", "Assessment Summary"),
+    node("p", `Expected entries: ${data.total}`),
+    node("p", `Recorded entries: ${data.recorded}`),
+    node("p", `Pending entries: ${data.pending}`)
+  );
+
+  host.append(summary);
+
+  const subjects = [...new Set(
+    data.results.map(r => r.subject)
+  )];
+
+  for (const subject of subjects) {
+    const records = data.results.filter(
+      r => r.subject === subject
+    );
+
+    const section = node("div", undefined, "card");
+
+    section.append(node("h3", subject));
+
+    const table = node("table");
+    const thead = node("thead");
+    const headingRow = node("tr");
+
+    for (const heading of [
+      "Student ID",
+      "Student Name",
+      "SBA Marks",
+      "Status"
+    ]) {
+      headingRow.append(node("th", heading));
+    }
+
+    thead.append(headingRow);
+    table.append(thead);
+
+    const tbody = node("tbody");
+
+    for (const record of records) {
+      const tr = node("tr");
+
+      const markText =
+        record.status === "PENDING"
+          ? "—"
+          : record.status === "ABSENT"
+            ? "ABSENT"
+            : String(record.mark);
+
+      for (const value of [
+        record.id,
+        record.name,
+        markText,
+        record.status
+      ]) {
+        tr.append(node("td", value));
+      }
+
+      tbody.append(tr);
+    }
+
+    table.append(tbody);
+
+    const wrapper = node("div");
+    wrapper.style.overflowX = "auto";
+    wrapper.append(table);
+
+    section.append(wrapper);
+    host.append(section);
+  }
+}
+
+
+
+function downloadSBAReportPdf() {
+  const data = currentSBAReport;
+
+  if (!data) {
+    message("sbaMessage", "Generate the report first.", true);
+    return;
+  }
+
+  const subjects = [...new Set(
+    (data.results || []).map(r => r.subject)
+  )];
+
+  if (!subjects.length) {
+    message("sbaMessage", "No subjects available.", true);
+    return;
+  }
+
+  const rows = [];
+
+  for (const subject of subjects) {
+    const records = data.results.filter(
+      r => r.subject === subject
+    );
+
+    if (!records.length) continue;
+
+    rows.push({
+      __subjectHeading: true,
+      subject
+    });
+
+    for (const record of records) {
+      rows.push([
+        record.id,
+        record.name,
+        record.status === "PENDING"
+          ? "-"
+          : record.status === "ABSENT"
+            ? "ABSENT"
+            : String(record.mark)
+      ]);
+    }
+  }
+
+  const pdf = exportPdf(
+    `${data.grade} - SBA Assessment Report`,
+    `Academic Year: ${data.year} | ${data.term}`,
+    ["Student ID", "Student Name", "SBA Marks"],
+    rows
+  );
+
+  exportDownloadLink(
+    pdf,
+    `SBA_Report_${data.year}_` +
+    `${exportSafeName(data.grade)}_` +
+    `${exportSafeName(data.term)}.pdf`,
+    "Download SBA Report",
+    true
+  );
+}
+
+
 
 </script>
 </body>
