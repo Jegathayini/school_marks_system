@@ -1,4 +1,3 @@
-
 /*
  * School Academic Management System V2
  * GitHub Pages — Fictional Demo Data
@@ -164,7 +163,7 @@
   });
 
   window.DEMO_INITIAL_DATA = {
-    version: 2,
+    version: 3,
     academicYear: 2026,
     schoolName: "Demo School (Fictional)",
     grades: GRADES.map(
@@ -172,6 +171,13 @@
     ),
     terms: TERMS,
     subjects: SUBJECTS,
+    teacherAssignments: {
+      demo_teacher: {
+        grades: ["Grade 06", "Grade 07", "Grade 10", "Grade 12"],
+        subjects: ["Maths", "Science"]
+      }
+    },
+    marksAudit: [],
     students
   };
 
