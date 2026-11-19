@@ -1,17 +1,19 @@
-
 /**
  * SCHOOL ACADEMIC MANAGEMENT SYSTEM
  * File 1 of 7: Code.gs
  *
  * Multi-register Google Sheets-bound Apps Script backend.
  *
- * Register 1: Grades 06 to 09
- * Register 2: Grades 10 to 11
- * Register 3: Grades 12 to 13 (GCE A/L)
+ * Register 1: Grades 01 to 05
+ * Register 2: Grades 06 to 09
+ * Register 3: Grades 10 to 11
+ * Register 4: Grades 12 to 13 (GCE A/L)
  *
  * All grades use:
  * - One web application
- * - One Marks_Entries sheet
+ * - One Marks_Entries sheet (Term Exams)
+ * - One SBA_Entries sheet (School-Based Assessment)
+ * - One Marks_Audit sheet (background edit accountability log)
  *
  * Each register must contain:
  * Row 1: Main headings
@@ -22,10 +24,6 @@
  * Column D onward: Yes/No subject selections
  *
  * ABSENT is stored as "ABSENT".
- *
- * IMPORTANT:
- * Use fictional student data until staff authentication
- * and server-side access restrictions are implemented.
  */
 
 /* ========== REGISTER CONFIGURATION ========== */
@@ -67,27 +65,15 @@ const REGISTER_CONFIG = [
 ];
 
 /*
- * IMPORTANT:
- * Change these sheetName values to match the
- * exact names of your Google Sheets tabs.
- */
-
-
-
-/*
  * Compatibility constant.
- *
- * Older backend files may still reference this.
- * We will update those files next.
  */
 const REGISTER_SHEET = 'Grade 06 to 09';
 
 /* ========== MARKS CONFIGURATION ========== */
 
 const MARKS_SHEET = 'Marks_Entries';
-
 const SBA_SHEET = 'SBA_Entries';
-
+const MARKS_AUDIT_SHEET = 'Marks_Audit';
 
 const RELIGION = [
   'Hinduism',
@@ -115,12 +101,25 @@ const MARKS_HEADERS = [
   'SubmittedBy'
 ];
 
-
+const MARKS_AUDIT_HEADERS = [
+  'Timestamp',
+  'Username',
+  'Role',
+  'AssessmentType',
+  'AcademicYear',
+  'Grade',
+  'Term',
+  'StudentID',
+  'StudentName',
+  'Subject',
+  'Action',
+  'OldMark',
+  'NewMark'
+];
 
 /* ========== WEB APPLICATION ========== */
 
 function doGet() {
-
   return HtmlService
     .createTemplateFromFile('Index')
     .evaluate()
@@ -132,7 +131,6 @@ function doGet() {
 }
 
 function include_(filename) {
-
   return HtmlService
     .createHtmlOutputFromFile(filename)
     .getContent();
@@ -141,9 +139,7 @@ function include_(filename) {
 /* ========== SPREADSHEET CONNECTION ========== */
 
 function book_() {
-
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-
   if (!ss) {
     throw new Error(
       'Spreadsheet connection unavailable. ' +
@@ -151,7 +147,6 @@ function book_() {
       'in the Google Sheet.'
     );
   }
-
   return ss;
 }
 
@@ -168,7 +163,6 @@ function book_() {
  * Grade 13 -> Grade 13
  */
 function normalizeGrade_(value) {
-
   const text = String(
     value == null ? '' : value
   ).trim();
@@ -188,7 +182,6 @@ function normalizeGrade_(value) {
  * enrollment in a subject.
  */
 function yes_(value) {
-
   const text = String(
     value == null ? '' : value
   )
@@ -202,7 +195,6 @@ function yes_(value) {
  * Validate academic year, grade and term.
  */
 function validateContext_(year, grade, term) {
-
   const y = Number(year);
   const g = normalizeGrade_(grade);
   const t = String(term || '').trim();
@@ -233,15 +225,55 @@ function validateContext_(year, grade, term) {
   };
 }
 
-/* ========== REGISTER ROUTING ========== */
+/**
+ * Normalize a stored or submitted mark for comparison.
+ */
+function normalizeStoredMark_(value) {
+  if (value === null || value === undefined || value === '') {
+    return '';
+  }
+  const text = String(value).trim();
+  if (!text) return '';
+  if (text.toUpperCase() === 'ABSENT' || text.toUpperCase() === 'AB') {
+    return 'ABSENT';
+  }
+  if (/^\d+(?:\.\d+)?$/.test(text)) {
+    const n = Number(text);
+    if (Number.isFinite(n)) return n;
+  }
+  return text;
+}
 
 /**
- * Find the register configuration for a grade.
+ * Check whether two normalized marks represent the same value.
  */
+function marksEqual_(a, b) {
+  const na = normalizeStoredMark_(a);
+  const nb = normalizeStoredMark_(b);
+  if (na === '' && nb === '') return true;
+  if (na === '' || nb === '') return false;
+  if (na === 'ABSENT' || nb === 'ABSENT') return na === nb;
+  if (typeof na === 'number' && typeof nb === 'number') {
+    return Math.abs(na - nb) < 1e-9;
+  }
+  return String(na) === String(nb);
+}
+
+/**
+ * Protect spreadsheet audit/string fields from accidental formula injection.
+ */
+function safeAuditCell_(value) {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'number') return value;
+  const text = String(value);
+  if (/^[=+\-@]/.test(text)) return "'" + text;
+  return text;
+}
+
+/* ========== REGISTER ROUTING ========== */
+
 function getRegisterConfig_(grade) {
-
   const normalizedGrade = normalizeGrade_(grade);
-
   if (!normalizedGrade) {
     throw new Error('Invalid grade: ' + grade);
   }
@@ -260,13 +292,8 @@ function getRegisterConfig_(grade) {
   return config;
 }
 
-/**
- * Get the correct register tab for a grade.
- */
 function getRegisterSheetForGrade_(grade) {
-
   const config = getRegisterConfig_(grade);
-
   const sheet = book_().getSheetByName(
     config.sheetName
   );
@@ -283,25 +310,7 @@ function getRegisterSheetForGrade_(grade) {
 
 /* ========== STUDENT REGISTER ========== */
 
-/**
- * Read a student register.
- *
- * Pass a grade to select the correct register.
- *
- * Examples:
- * readRegister_('Grade 07')
- * readRegister_('Grade 10')
- * readRegister_('Grade 12')
- *
- * Temporary compatibility:
- * Calling readRegister_() without a grade
- * reads the Grades 06-09 register.
- *
- * Other backend files must be updated to
- * pass the selected grade explicitly.
- */
 function readRegister_(grade) {
-
   const config = grade
     ? getRegisterConfig_(grade)
     : getRegisterConfig_('Grade 06');
@@ -331,7 +340,6 @@ function readRegister_(grade) {
 
   const mainHeaders = rows[0];
   const optionHeaders = rows[1];
-
   const columns = Object.create(null);
 
   const count = Math.max(
@@ -341,15 +349,12 @@ function readRegister_(grade) {
 
   /*
    * Columns:
-   *
    * A = Student ID
    * B = Student Name
    * C = Grade
-   *
    * Subjects start from column D.
    */
   for (let col = 3; col < count; col++) {
-
     const option = String(
       optionHeaders[col] || ''
     ).trim();
@@ -358,7 +363,6 @@ function readRegister_(grade) {
       mainHeaders[col] || ''
     ).trim();
 
-    // Prefer the subject option heading.
     const subject = option || heading;
 
     if (
@@ -401,28 +405,17 @@ function readRegister_(grade) {
   };
 }
 
-/**
- * Convert register rows into student objects.
- *
- * Supports merged grade cells where the grade
- * is written once for a group of students.
- */
 function readStudents_(rows) {
-
   const students = [];
   const seen = new Set();
-
   let currentGrade = '';
 
   for (let i = 2; i < rows.length; i++) {
-
     const row = rows[i];
-
     const detectedGrade = normalizeGrade_(
       row[2]
     );
 
-    // Supports merged grade cells.
     if (detectedGrade) {
       currentGrade = detectedGrade;
     }
@@ -435,7 +428,6 @@ function readStudents_(rows) {
       row[1] || ''
     ).trim();
 
-    // Ignore completely empty student rows.
     if (!id && !name) {
       continue;
     }
@@ -472,21 +464,11 @@ function readStudents_(rows) {
 
 /* ========== MULTI-REGISTER VALIDATION ========== */
 
-/**
- * Load and validate all three registers.
- *
- * Ensures:
- * - Students are in the correct register
- * - Student IDs are unique across the school
- * - Subject headings are valid
- */
 function readAllRegisters_() {
-
   const registers = [];
   const schoolIds = new Map();
 
   for (const config of REGISTER_CONFIG) {
-
     const register = readRegister_(
       config.grades[0]
     );
@@ -496,7 +478,6 @@ function readAllRegisters_() {
     );
 
     for (const student of students) {
-
       if (
         !config.grades.includes(
           student.grade
@@ -543,24 +524,15 @@ function readAllRegisters_() {
 
 /* ========== FRONTEND SETUP ========== */
 
-/**
- * Return all available grades and subjects.
- *
- * subjectsByGrade allows the frontend to show
- * only subjects belonging to the selected grade.
- */
 function getSetupInternal_() {
-
   const registers = readAllRegisters_();
 
   const allGrades = new Set();
   const allSubjects = new Set();
-
   const subjectsByGrade = {};
   const registerSheets = {};
 
   for (const register of registers) {
-
     const subjects = Object.keys(
       register.columns
     );
@@ -570,13 +542,11 @@ function getSetupInternal_() {
     }
 
     for (const grade of register.grades) {
-
       const gradeStudents =
         register.students.filter(
           student => student.grade === grade
         );
 
-      // Display grades containing students.
       if (gradeStudents.length > 0) {
         allGrades.add(grade);
       }
@@ -591,34 +561,69 @@ function getSetupInternal_() {
 
   return {
     grades: [...allGrades].sort(),
-
-    /*
-     * Compatibility field for existing frontend.
-     * This is the combined subject list.
-     */
     subjects: [...allSubjects].sort(),
-
-    /*
-     * New field for grade-specific dropdowns.
-     */
     subjectsByGrade,
-
     registerSheets,
-
     registerSheet: 'Multiple Registers'
+  };
+}
+
+/**
+ * Return setup filtered to the signed-in account's assigned classes/subjects.
+ * Administrators receive all configured grades and subjects.
+ */
+function getSetupForAccountInternal_(account) {
+  const setup = getSetupInternal_();
+  if (!account || account.role === 'ADMIN') {
+    return {
+      ...setup,
+      isRestricted: false,
+      assignedGrades: null,
+      assignedSubjects: null,
+      role: account ? account.role : 'ADMIN'
+    };
+  }
+
+  const assignment = teacherGetAssignments_(account.username);
+  const allowedGrades = assignment.grades
+    ? setup.grades.filter(g => assignment.grades.includes(g))
+    : setup.grades.slice();
+
+  const subjectsByGrade = {};
+  const registerSheets = {};
+  const allowedSubjectsSet = new Set();
+
+  for (const grade of allowedGrades) {
+    const rawList = Array.isArray(setup.subjectsByGrade[grade])
+      ? setup.subjectsByGrade[grade]
+      : [];
+    const filteredList = assignment.subjects
+      ? rawList.filter(s => assignment.subjects.includes(s))
+      : rawList.slice();
+
+    subjectsByGrade[grade] = filteredList;
+    registerSheets[grade] = setup.registerSheets[grade];
+    for (const subj of filteredList) {
+      allowedSubjectsSet.add(subj);
+    }
+  }
+
+  return {
+    grades: allowedGrades,
+    subjects: [...allowedSubjectsSet].sort(),
+    subjectsByGrade,
+    registerSheets,
+    registerSheet: setup.registerSheet,
+    isRestricted: Boolean(assignment.grades || assignment.subjects),
+    assignedGrades: assignment.grades ? assignment.grades.slice() : null,
+    assignedSubjects: assignment.subjects ? assignment.subjects.slice() : null,
+    role: account.role
   };
 }
 
 /* ========== STUDENTS FOR MARKS ENTRY ========== */
 
-/**
- * Return only students who:
- *
- * 1. Belong to the selected grade
- * 2. Have Yes for the selected subject
- */
 function getStudentsInternal_(grade, subject) {
-
   const normalizedGrade = normalizeGrade_(
     grade
   );
@@ -669,22 +674,13 @@ function getStudentsInternal_(grade, subject) {
 
 /* ========== SHEET INITIALIZATION ========== */
 
-/**
- * Create the marks sheet if missing.
- *
- * Existing sheet headings are validated
- * before new marks are saved.
- */
 function ensureSheet_(name, headers) {
-
   const spreadsheet = book_();
-
   let sheet = spreadsheet.getSheetByName(
     name
   );
 
   if (!sheet) {
-
     sheet = spreadsheet.insertSheet(
       name
     );
@@ -699,13 +695,11 @@ function ensureSheet_(name, headers) {
       .setValues([headers]);
 
     sheet.setFrozenRows(1);
-
     return sheet;
   }
 
-  // Safely upgrade the existing 9-column marks sheet without touching marks.
-  // This runs under saveMarksInternal_'s script lock.
-  if (name === MARKS_SHEET && headers.length === 10) {
+  // Safely upgrade existing 9-column marks/SBA sheets without touching marks.
+  if ((name === MARKS_SHEET || name === SBA_SHEET) && headers.length === 10) {
     const current = sheet.getRange(1, 1, 1, 9).getDisplayValues()[0];
     if (current.join('|') === headers.slice(0, 9).join('|')) {
       const tenth = String(sheet.getRange(1, 10).getDisplayValue()).trim();
@@ -740,37 +734,112 @@ function ensureSheet_(name, headers) {
   return sheet;
 }
 
-/* ========== MARKS SUBMISSION ========== */
+/* ========== BACKGROUND MARKS AUDIT LOG ========== */
 
 /**
- * Save marks for any configured grade.
- *
- * The selected grade determines which
- * student register is used.
- *
- * All marks are stored centrally in
- * Marks_Entries.
- *
- * ABSENT is stored as "ABSENT".
- *
- * Existing marks cannot be overwritten
- * through this function.
+ * Append mark create/update audit records in the background.
+ * Failures are logged to Apps Script execution logs and never block
+ * teachers from saving or updating marks.
  */
-function saveMarksInternal_(payload, submittedBy) {
+function logMarksAuditNonBlocking_(records, meta) {
+  if (!Array.isArray(records) || !records.length) return;
+  try {
+    const auditSheet = ensureSheet_(MARKS_AUDIT_SHEET, MARKS_AUDIT_HEADERS);
+    const rows = records.map(rec => [
+      meta.now,
+      meta.username,
+      meta.role,
+      meta.assessmentType,
+      meta.year,
+      meta.grade,
+      meta.term,
+      safeAuditCell_(rec.studentId),
+      safeAuditCell_(rec.studentName),
+      safeAuditCell_(meta.subject),
+      rec.action,
+      rec.oldMark === '' || rec.oldMark === null || rec.oldMark === undefined ? '' : rec.oldMark,
+      rec.newMark
+    ]);
+    auditSheet
+      .getRange(auditSheet.getLastRow() + 1, 1, rows.length, MARKS_AUDIT_HEADERS.length)
+      .setValues(rows);
+  } catch (err) {
+    console.error('MARKS AUDIT LOG FAILED (' + meta.assessmentType + ' ' + meta.grade + ' ' + meta.subject + '): ' + String(err));
+  }
+}
 
-  // This identity must come from authRequire_ on the server, not the browser.
+/**
+ * Admin-only reader for background marks edit accountability logs.
+ */
+function getMarksAuditLogInternal_(year, grade, limit) {
+  const sheet = book_().getSheetByName(MARKS_AUDIT_SHEET);
+  if (!sheet || sheet.getLastRow() < 2) {
+    return { entries: [], total: 0 };
+  }
+
+  const actual = sheet.getRange(1, 1, 1, MARKS_AUDIT_HEADERS.length).getDisplayValues()[0];
+  if (actual.join('|') !== MARKS_AUDIT_HEADERS.join('|')) {
+    throw new Error('Unexpected Marks_Audit sheet headings.');
+  }
+
+  const yearFilter = year !== null && year !== undefined && String(year).trim() !== '' && String(year).trim().toUpperCase() !== 'ALL'
+    ? Number(year)
+    : null;
+  const gradeFilter = grade && String(grade).trim().toUpperCase() !== 'ALL'
+    ? normalizeGrade_(grade)
+    : '';
+  const maxEntries = Math.max(1, Math.min(500, Number(limit) || 100));
+
+  const values = sheet.getRange(2, 1, sheet.getLastRow() - 1, MARKS_AUDIT_HEADERS.length).getValues();
+  const matched = [];
+  for (let i = values.length - 1; i >= 0; i--) {
+    const r = values[i];
+    if (r.every(cell => cell === '' || cell === null)) continue;
+    const rowYear = Number(r[4]);
+    const rowGrade = normalizeGrade_(r[5]);
+    if (yearFilter !== null && rowYear !== yearFilter) continue;
+    if (gradeFilter && rowGrade !== gradeFilter) continue;
+
+    matched.push({
+      timestamp: r[0] instanceof Date ? r[0].toISOString() : String(r[0] || ''),
+      username: String(r[1] || ''),
+      role: String(r[2] || ''),
+      assessmentType: String(r[3] || ''),
+      year: rowYear,
+      grade: rowGrade,
+      term: String(r[6] || ''),
+      studentId: String(r[7] || ''),
+      studentName: String(r[8] || ''),
+      subject: String(r[9] || ''),
+      action: String(r[10] || ''),
+      oldMark: r[11] === '' || r[11] === null || r[11] === undefined ? '' : r[11],
+      newMark: r[12] === '' || r[12] === null || r[12] === undefined ? '' : r[12]
+    });
+
+    if (matched.length >= maxEntries) break;
+  }
+
+  return {
+    entries: matched,
+    total: matched.length
+  };
+}
+
+/* ========== MARKS SUBMISSION & DIRECT UPDATES ========== */
+
+/**
+ * Shared internal writer for both Marks_Entries (EXAM) and SBA_Entries (SBA).
+ * Supports both creating new marks and directly updating existing marks,
+ * with non-blocking background audit logging.
+ */
+function saveAssessmentMarksInternal_(sheetName, assessmentType, payload, submittedBy, actorRole) {
   const submitter = String(submittedBy || '').trim().toLowerCase();
   if (!/^[a-z][a-z0-9._-]{3,31}$/.test(submitter)) {
     throw new Error('Unauthorized: valid submitter identity required.');
   }
 
-  if (
-    !payload ||
-    typeof payload !== 'object'
-  ) {
-    throw new Error(
-      'Missing marks submission.'
-    );
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('Missing marks submission.');
   }
 
   const context = validateContext_(
@@ -779,64 +848,44 @@ function saveMarksInternal_(payload, submittedBy) {
     payload.term
   );
 
-  const subject = String(
-    payload.subject || ''
-  ).trim();
+  const subject = String(payload.subject || '').trim();
 
-  if (
-    !Array.isArray(payload.marks) ||
-    !payload.marks.length
-  ) {
-    throw new Error(
-      'No marks submitted.'
-    );
+  if (!Array.isArray(payload.marks) || !payload.marks.length) {
+    throw new Error('No marks submitted.');
   }
 
   const lock = LockService.getScriptLock();
-
   lock.waitLock(30000);
 
   try {
-
-    /* ========== VALIDATE STUDENTS ========== */
-
     const enrolledStudents = getStudentsInternal_(
       context.grade,
       subject
     );
 
     const allowedNames = new Map(
-      enrolledStudents.map(student => [
-        student.id,
-        student.name
-      ])
+      enrolledStudents.map(student => [student.id, student.name])
     );
 
     const submittedIds = new Set();
     const entries = [];
 
     for (const item of payload.marks) {
+      if (!item || typeof item !== 'object') {
+        throw new Error('Invalid mark record in submission.');
+      }
 
-      const id = String(
-        item.id || ''
-      ).trim();
+      const id = String(item.id || '').trim();
 
       if (!allowedNames.has(id)) {
-        throw new Error(
-          'Student is not enrolled: ' + id
-        );
+        throw new Error('Student is not enrolled: ' + id);
       }
 
       if (submittedIds.has(id)) {
-        throw new Error(
-          'Duplicate student in submission: ' +
-          id
-        );
+        throw new Error('Duplicate student in submission: ' + id);
       }
-
       submittedIds.add(id);
 
-      // Blank marks are not submitted.
       if (
         item.mark === '' ||
         item.mark === null ||
@@ -845,47 +894,24 @@ function saveMarksInternal_(payload, submittedBy) {
         continue;
       }
 
-      const markText = String(
-        item.mark
-      ).trim();
-
+      const markText = String(item.mark).trim();
       let mark;
 
-      /* ========== ABSENT HANDLING ========== */
-
-      if (
-        markText.toUpperCase() ===
-        'ABSENT'
-      ) {
-
+      if (markText.toUpperCase() === 'ABSENT') {
         mark = 'ABSENT';
-
       } else {
-
-        /* ========== NUMERIC VALIDATION ========== */
-
         if (
-          !/^\d+(?:\.\d+)?$/.test(
-            markText
-          )
+          typeof item.mark === 'boolean' ||
+          !/^\d+(?:\.\d+)?$/.test(markText)
         ) {
-          throw new Error(
-            'Invalid mark for student ' +
-            id
-          );
+          throw new Error('Invalid mark for student ' + id);
         }
 
         mark = Number(markText);
 
-        if (
-          !Number.isFinite(mark) ||
-          mark < 0 ||
-          mark > 100
-        ) {
+        if (!Number.isFinite(mark) || mark < 0 || mark > 100) {
           throw new Error(
-            'Marks must be between 0 and 100 ' +
-            'for student ' +
-            id
+            'Marks must be between 0 and 100 for student ' + id
           );
         }
       }
@@ -898,89 +924,62 @@ function saveMarksInternal_(payload, submittedBy) {
     }
 
     if (!entries.length) {
-      throw new Error(
-        'Enter at least one mark.'
-      );
+      throw new Error('Enter at least one mark.');
     }
 
-    /* ========== INITIALIZE STORAGE ========== */
+    const marksSheet = ensureSheet_(sheetName, MARKS_HEADERS);
+    const storedRows = marksSheet.getDataRange().getValues();
+    const existingMap = new Map();
 
-    const marksSheet = ensureSheet_(
-      MARKS_SHEET,
-      MARKS_HEADERS
-    );
-
-
-
-    /* ========== CHECK EXISTING RECORDS ========== */
-
-    const storedRows = marksSheet
-      .getDataRange()
-      .getValues();
-
-    const existingKeys = new Set();
-
-    for (
-      let i = 1;
-      i < storedRows.length;
-      i++
-    ) {
-
+    for (let i = 1; i < storedRows.length; i++) {
       const row = storedRows[i];
 
-      // Ignore fully empty rows left behind after clearing marks.
-      // They are not stored mark records and must not create duplicate keys.
       if (row.every(cell => cell === '' || cell === null)) {
         continue;
       }
 
-      // Fail safely if a partially filled row lacks identifying fields.
       if ([row[0], row[1], row[2], row[3], row[6]].some(
         cell => cell === '' || cell === null
       )) {
         throw new Error(
           'Incomplete stored marks record at row ' + (i + 1) +
-          ' in ' + MARKS_SHEET
+          ' in ' + sheetName
         );
       }
 
       const key = [
-        row[0],
-        row[1],
-        row[2],
-        String(row[3]),
-        row[6]
+        Number(row[0]),
+        normalizeGrade_(row[1]),
+        String(row[2]).trim(),
+        String(row[3]).trim(),
+        String(row[6]).trim()
       ].join('|');
 
-      if (existingKeys.has(key)) {
+      if (existingMap.has(key)) {
         throw new Error(
-          'Duplicate stored marks detected in ' +
-          MARKS_SHEET
+          'Duplicate stored marks detected in ' + sheetName + ': ' + key
         );
       }
 
-      existingKeys.add(key);
+      existingMap.set(key, {
+        rowNumber: i + 1,
+        mark: normalizeStoredMark_(row[7])
+      });
     }
 
-    /* ========== SUBJECT GROUP ========== */
-
-    const group = RELIGION.includes(
-      subject
-    )
+    const group = RELIGION.includes(subject)
       ? 'Religion'
       : AESTHETIC.includes(subject)
         ? 'Aesthetic'
         : subject;
 
     const now = new Date();
-
     const newRows = [];
+    const updates = [];
+    const auditRecords = [];
+    let unchanged = 0;
 
-    /* ========== PREPARE NEW RECORDS ========== */
-
-    // Validate every mark before writing.
     for (const entry of entries) {
-
       const key = [
         context.year,
         context.grade,
@@ -989,74 +988,130 @@ function saveMarksInternal_(payload, submittedBy) {
         subject
       ].join('|');
 
-      if (existingKeys.has(key)) {
-        throw new Error(
-          'Marks already exist for student ' +
-          entry.id +
-          ' in ' +
-          subject +
-          '. Contact the administrator ' +
-          'for corrections.'
-        );
+      if (existingMap.has(key)) {
+        const existing = existingMap.get(key);
+        if (marksEqual_(existing.mark, entry.mark)) {
+          unchanged++;
+          continue;
+        }
+
+        updates.push({
+          rowNumber: existing.rowNumber,
+          values: [
+            entry.name,
+            group,
+            subject,
+            entry.mark,
+            now,
+            submitter
+          ]
+        });
+
+        auditRecords.push({
+          studentId: entry.id,
+          studentName: entry.name,
+          action: 'UPDATE',
+          oldMark: existing.mark,
+          newMark: entry.mark
+        });
+      } else {
+        existingMap.set(key, {
+          rowNumber: -1,
+          mark: entry.mark
+        });
+
+        newRows.push([
+          context.year,
+          context.grade,
+          context.term,
+          entry.id,
+          entry.name,
+          group,
+          subject,
+          entry.mark,
+          now,
+          submitter
+        ]);
+
+        auditRecords.push({
+          studentId: entry.id,
+          studentName: entry.name,
+          action: 'CREATE',
+          oldMark: '',
+          newMark: entry.mark
+        });
       }
-
-      existingKeys.add(key);
-
-      newRows.push([
-        context.year,
-        context.grade,
-        context.term,
-        entry.id,
-        entry.name,
-        group,
-        subject,
-        entry.mark,
-        now,
-        submitter
-      ]);
-
-
     }
 
-    /* ========== SAVE MARKS ========== */
+    for (const upd of updates) {
+      marksSheet
+        .getRange(upd.rowNumber, 5, 1, 6)
+        .setValues([upd.values]);
+    }
 
-    marksSheet
-      .getRange(
-        marksSheet.getLastRow() + 1,
-        1,
-        newRows.length,
-        MARKS_HEADERS.length
-      )
-      .setValues(newRows);
+    if (newRows.length) {
+      marksSheet
+        .getRange(
+          marksSheet.getLastRow() + 1,
+          1,
+          newRows.length,
+          MARKS_HEADERS.length
+        )
+        .setValues(newRows);
+    }
+
+    logMarksAuditNonBlocking_(auditRecords, {
+      now,
+      username: submitter,
+      role: String(actorRole || 'STAFF').toUpperCase(),
+      assessmentType,
+      year: context.year,
+      grade: context.grade,
+      term: context.term,
+      subject
+    });
 
     return {
       added: newRows.length,
-      updated: 0,
-      total: newRows.length
+      updated: updates.length,
+      unchanged,
+      total: newRows.length + updates.length
     };
-
   } finally {
-
     lock.releaseLock();
   }
 }
 
+function saveMarksInternal_(payload, submittedBy, actorRole) {
+  return saveAssessmentMarksInternal_(
+    MARKS_SHEET,
+    'EXAM',
+    payload,
+    submittedBy,
+    actorRole
+  );
+}
+
+/* ========== SBA MARKS STORAGE ========== */
+
+function saveSBAMarksInternal_(payload, submittedBy, actorRole) {
+  return saveAssessmentMarksInternal_(
+    SBA_SHEET,
+    'SBA',
+    payload,
+    submittedBy,
+    actorRole
+  );
+}
+
 /* ========== CONNECTION TEST ========== */
 
-/**
- * Run this function from the Apps Script editor
- * to verify the three register tabs.
- *
- * No marks are modified.
- */
 function testConnection_() {
-
   Logger.log(
     '===== MULTI-REGISTER CONNECTION TEST ====='
   );
 
   const setup = getSetupInternal_();
-
   Logger.log(
     JSON.stringify(
       setup,
@@ -1066,11 +1121,7 @@ function testConnection_() {
   );
 
   for (const grade of setup.grades) {
-
-    const register = readRegister_(
-      grade
-    );
-
+    const register = readRegister_(grade);
     const students = readStudents_(
       register.rows
     ).filter(
@@ -1094,6 +1145,7 @@ function testConnection_() {
     'Connection test completed successfully.'
   );
 }
+
 function debugMarksSheet() {
   const ss = book_();
   const sheet = ss.getSheetByName('Marks_Entries');
@@ -1104,7 +1156,6 @@ function debugMarksSheet() {
   }
 
   const values = sheet.getDataRange().getValues();
-
   const populatedRows = values.slice(1).filter(row =>
     row.some(cell => String(cell).trim() !== '')
   );
@@ -1116,193 +1167,6 @@ function debugMarksSheet() {
   Logger.log('Populated data rows: ' + populatedRows.length);
   Logger.log('First populated row: ' + JSON.stringify(populatedRows[0] || null));
 }
-
-
-/* ========== SBA MARKS STORAGE ========== */
-
-function saveSBAMarksInternal_(payload, submittedBy) {
-  const submitter = String(submittedBy || '')
-    .trim()
-    .toLowerCase();
-
-  if (!/^[a-z][a-z0-9._-]{3,31}$/.test(submitter)) {
-    throw new Error('Unauthorized submitter.');
-  }
-
-  if (!payload || typeof payload !== 'object') {
-    throw new Error('Missing SBA submission.');
-  }
-
-  const context = validateContext_(
-    payload.year,
-    payload.grade,
-    payload.term
-  );
-
-  const subject = String(payload.subject || '').trim();
-
-  if (!Array.isArray(payload.marks) || !payload.marks.length) {
-    throw new Error('No SBA marks submitted.');
-  }
-
-  const lock = LockService.getScriptLock();
-  lock.waitLock(30000);
-
-  try {
-    const students = getStudentsInternal_(
-      context.grade,
-      subject
-    );
-
-    const allowed = new Map(
-      students.map(s => [s.id, s.name])
-    );
-
-    const entries = [];
-    const submittedIds = new Set();
-
-    for (const item of payload.marks) {
-      const id = String(item.id || '').trim();
-
-      if (!allowed.has(id)) {
-        throw new Error('Student not enrolled: ' + id);
-      }
-
-      if (submittedIds.has(id)) {
-        throw new Error('Duplicate student: ' + id);
-      }
-
-      submittedIds.add(id);
-
-      if (
-        item.mark === '' ||
-        item.mark === null ||
-        item.mark === undefined
-      ) {
-        continue;
-      }
-
-      const text = String(item.mark).trim();
-      let mark;
-
-      if (text.toUpperCase() === 'ABSENT') {
-        mark = 'ABSENT';
-      } else {
-        if (!/^\d+(?:\.\d+)?$/.test(text)) {
-          throw new Error('Invalid SBA mark: ' + id);
-        }
-
-        mark = Number(text);
-
-        if (!Number.isFinite(mark) || mark < 0 || mark > 100) {
-          throw new Error('SBA marks must be 0–100: ' + id);
-        }
-      }
-
-      entries.push({
-        id,
-        name: allowed.get(id),
-        mark
-      });
-    }
-
-    if (!entries.length) {
-      throw new Error('Enter at least one SBA mark.');
-    }
-
-    const sheet = ensureSheet_(SBA_SHEET, MARKS_HEADERS);
-    const storedRows = sheet.getDataRange().getValues();
-    const existingKeys = new Set();
-
-    for (let i = 1; i < storedRows.length; i++) {
-      const row = storedRows[i];
-
-      if (row.every(cell => cell === '' || cell === null)) {
-        continue;
-      }
-
-      if ([row[0], row[1], row[2], row[3], row[6]].some(
-        cell => cell === '' || cell === null
-      )) {
-        throw new Error(
-          'Incomplete SBA record at row ' + (i + 1)
-        );
-      }
-
-      const key = [
-        row[0],
-        row[1],
-        row[2],
-        String(row[3]),
-        row[6]
-      ].join('|');
-
-      if (existingKeys.has(key)) {
-        throw new Error('Duplicate stored SBA record: ' + key);
-      }
-
-      existingKeys.add(key);
-    }
-
-    const group = RELIGION.includes(subject)
-      ? 'Religion'
-      : AESTHETIC.includes(subject)
-        ? 'Aesthetic'
-        : subject;
-
-    const now = new Date();
-    const newRows = [];
-
-    for (const entry of entries) {
-      const key = [
-        context.year,
-        context.grade,
-        context.term,
-        entry.id,
-        subject
-      ].join('|');
-
-      if (existingKeys.has(key)) {
-        throw new Error(
-          'SBA marks already exist for student ' +
-          entry.id + '. Contact the administrator.'
-        );
-      }
-
-      existingKeys.add(key);
-
-      newRows.push([
-        context.year,
-        context.grade,
-        context.term,
-        entry.id,
-        entry.name,
-        group,
-        subject,
-        entry.mark,
-        now,
-        submitter
-      ]);
-    }
-
-    sheet.getRange(
-      sheet.getLastRow() + 1,
-      1,
-      newRows.length,
-      MARKS_HEADERS.length
-    ).setValues(newRows);
-
-    return {
-      added: newRows.length,
-      updated: 0,
-      total: newRows.length
-    };
-
-  } finally {
-    lock.releaseLock();
-  }
-}
-
 
 function testConnection() {
   testConnection_();

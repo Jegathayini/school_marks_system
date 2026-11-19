@@ -1,4 +1,3 @@
-
 /**
  * SCHOOL ACADEMIC MANAGEMENT SYSTEM
  * File 6 of 7: TermComparison.gs
@@ -9,19 +8,7 @@
  * Grades 10-11 -> O/L Register
  * Grades 12-13 -> A/L Register
  *
- * Compares academic performance across:
- * - Term 1
- * - Term 2
- * - Term 3
- *
- * Supports:
- * - Automatically detected subjects
- * - Grade-specific registers
- * - Subject-wise term comparisons
- * - Class average comparisons
- * - Submission completion tracking
- * - Performance improvement or decline
- * - ABSENT and pending marks
+ * Compares academic performance across Term 1, Term 2, and Term 3.
  *
  * ABSENT RULES:
  * - ABSENT counts as entered.
@@ -30,7 +17,7 @@
  * - Missing marks remain pending.
  *
  * Dependencies:
- * - getAnalysisInternal_() from Analysis.gs
+ * - getAnalysisInternal_(), analysisLoadGradeContext_() from Analysis.gs
  * - validateContext_() from Code.gs
  *
  * This file is READ-ONLY.
@@ -48,11 +35,9 @@ const COMPARISON_TERMS = [
 
 /**
  * Round numeric values to two decimal places.
- *
  * Preserve null for unavailable averages.
  */
 function comparisonRound_(value) {
-
   if (
     value === null ||
     value === undefined ||
@@ -62,130 +47,78 @@ function comparisonRound_(value) {
     return null;
   }
 
-  return Math.round(
-    (Number(value) + Number.EPSILON) * 100
-  ) / 100;
+  return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 }
 
 /* ========== MAIN TERM COMPARISON ========== */
 
 /**
- * Compare all three terms for a grade.
- *
- * Examples:
- *
- * getTermComparisonInternal_(2026, 'Grade 06')
- * getTermComparisonInternal_(2026, 'Grade 11')
- * getTermComparisonInternal_(2026, 'Grade 12')
- * getTermComparisonInternal_(2026, 'Grade 13')
- *
- * getAnalysisInternal_() automatically selects the
- * correct student register.
+ * Compare all three terms for a grade using a single spreadsheet read.
+ * Optionally accepts preloadedContext from analysisLoadGradeContext_().
  */
-function getTermComparisonInternal_(year, grade) {
+function getTermComparisonInternal_(year, grade, preloadedContext) {
+  const context = validateContext_(year, grade, 'Term 1');
 
-  /* ========== VALIDATE REQUEST ========== */
+  const contextData = (
+    preloadedContext &&
+    preloadedContext.grade === context.grade
+  )
+    ? preloadedContext
+    : analysisLoadGradeContext_(context.grade);
 
-  const context = validateContext_(
-    year,
-    grade,
-    'Term 1'
+  const analyses = COMPARISON_TERMS.map(term =>
+    getAnalysisInternal_(context.year, context.grade, term, contextData)
   );
 
-  /* ========== ANALYZE ALL THREE TERMS ========== */
-
-  const analyses = COMPARISON_TERMS.map(
-    term => getAnalysisInternal_(
-      context.year,
-      context.grade,
-      term
-    )
-  );
-
-  const studentCount =
-    analyses[0].studentCount;
+  const studentCount = analyses[0].studentCount;
 
   /* ========== TERM-LEVEL STATISTICS ========== */
 
-  const termResults = analyses.map(
-    analysis => {
+  const termResults = analyses.map(analysis => {
+    const expected = analysis.students.reduce(
+      (total, student) => total + student.expected,
+      0
+    );
 
-      const expected = analysis.students.reduce(
-        (total, student) =>
-          total + student.expected,
-        0
-      );
+    const entered = analysis.students.reduce(
+      (total, student) => total + student.entered,
+      0
+    );
 
-      // Includes numeric marks and ABSENT.
-      const entered = analysis.students.reduce(
-        (total, student) =>
-          total + student.entered,
-        0
-      );
+    const absent = analysis.students.reduce(
+      (total, student) => total + (student.absent || 0),
+      0
+    );
 
-      const absent = analysis.students.reduce(
-        (total, student) =>
-          total + (student.absent || 0),
-        0
-      );
+    const numeric = Math.max(0, entered - absent);
+    const missing = Math.max(0, expected - entered);
+    const complete = expected > 0 && missing === 0;
 
-      const numeric = Math.max(
-        0,
-        entered - absent
-      );
+    const completionPercentage = expected > 0
+      ? comparisonRound_((entered / expected) * 100)
+      : 0;
 
-      const missing = Math.max(
-        0,
-        expected - entered
-      );
-
-      const complete =
-        expected > 0 &&
-        missing === 0;
-
-      const completionPercentage =
-        expected > 0
-          ? comparisonRound_(
-              entered / expected * 100
-            )
-          : 0;
-
-      return {
-        term: analysis.term,
-
-        classAverage:
-          analysis.classAverage,
-
-        expected,
-        entered,
-        absent,
-        numeric,
-        missing,
-
-        completeStudents:
-          analysis.completeCount,
-
-        incompleteStudents:
-          analysis.pendingCount,
-
-        completionPercentage,
-
-        complete
-      };
-    }
-  );
+    return {
+      term: analysis.term,
+      classAverage: analysis.classAverage,
+      expected,
+      entered,
+      absent,
+      numeric,
+      missing,
+      completeStudents: analysis.completeCount,
+      incompleteStudents: analysis.pendingCount,
+      completionPercentage,
+      complete
+    };
+  });
 
   /* ========== COLLECT SUBJECT NAMES ========== */
 
   const subjectNames = new Set();
-
   for (const analysis of analyses) {
-
     for (const subject of analysis.subjects) {
-
-      subjectNames.add(
-        subject.subject
-      );
+      subjectNames.add(subject.subject);
     }
   }
 
@@ -194,92 +127,46 @@ function getTermComparisonInternal_(year, grade) {
   const subjectResults = [];
 
   for (const subjectName of subjectNames) {
+    const termData = analyses.map(analysis => {
+      const subject = analysis.subjects.find(
+        item => item.subject === subjectName
+      );
 
-    const termData = analyses.map(
-      analysis => {
-
-        const subject = analysis.subjects.find(
-          item =>
-            item.subject === subjectName
-        );
-
-        if (!subject) {
-
-          return {
-            term: analysis.term,
-
-            average: null,
-
-            expected: 0,
-            entered: 0,
-            absent: 0,
-            numeric: 0,
-            missing: 0,
-
-            highest: null,
-            lowest: null,
-
-            complete: false
-          };
-        }
-
-        const expected = Number(
-          subject.enrolled || 0
-        );
-
-        const entered = Number(
-          subject.entered || 0
-        );
-
-        const absent = Number(
-          subject.absent || 0
-        );
-
-        const numeric = Math.max(
-          0,
-          entered - absent
-        );
-
-        const missing = Math.max(
-          0,
-          expected - entered
-        );
-
-        const complete =
-          expected > 0 &&
-          missing === 0;
-
+      if (!subject) {
         return {
           term: analysis.term,
-
-          /*
-           * Analysis.gs already calculates
-           * the subject average.
-           *
-           * ABSENT contributes zero.
-           *
-           * This average can be provisional
-           * until all marks are submitted.
-           */
-          average:
-            subject.average,
-
-          expected,
-          entered,
-          absent,
-          numeric,
-          missing,
-
-          highest:
-            subject.highest,
-
-          lowest:
-            subject.lowest,
-
-          complete
+          average: null,
+          expected: 0,
+          entered: 0,
+          absent: 0,
+          numeric: 0,
+          missing: 0,
+          highest: null,
+          lowest: null,
+          complete: false
         };
       }
-    );
+
+      const expected = Number(subject.enrolled || 0);
+      const entered = Number(subject.entered || 0);
+      const absent = Number(subject.absent || 0);
+      const numeric = Math.max(0, entered - absent);
+      const missing = Math.max(0, expected - entered);
+      const complete = expected > 0 && missing === 0;
+
+      return {
+        term: analysis.term,
+        average: subject.average,
+        expected,
+        entered,
+        absent,
+        numeric,
+        missing,
+        highest: subject.highest,
+        lowest: subject.lowest,
+        complete
+      };
+    });
 
     subjectResults.push({
       subject: subjectName,
@@ -289,44 +176,20 @@ function getTermComparisonInternal_(year, grade) {
 
   /* ========== CLASS AVERAGE COMPARISON ========== */
 
-  const averageComparison = termResults.map(
-    term => ({
-      term: term.term,
-
-      average:
-        term.classAverage,
-
-      complete:
-        term.complete,
-
-      completeStudents:
-        term.completeStudents
-    })
-  );
+  const averageComparison = termResults.map(term => ({
+    term: term.term,
+    average: term.classAverage,
+    complete: term.complete,
+    completeStudents: term.completeStudents
+  }));
 
   /* ========== PERFORMANCE CHANGES ========== */
 
   const changes = [];
 
-  for (
-    let i = 1;
-    i < termResults.length;
-    i++
-  ) {
-
-    const previous =
-      termResults[i - 1];
-
-    const current =
-      termResults[i];
-
-    /*
-     * Compare final class averages only
-     * when both terms are fully complete.
-     *
-     * ABSENT results are valid and
-     * contribute zero to the averages.
-     */
+  for (let i = 1; i < termResults.length; i++) {
+    const previous = termResults[i - 1];
+    const current = termResults[i];
 
     if (
       previous.complete &&
@@ -336,32 +199,24 @@ function getTermComparisonInternal_(year, grade) {
       current.classAverage !== null &&
       current.classAverage !== undefined
     ) {
-
       const difference = comparisonRound_(
-        current.classAverage -
-        previous.classAverage
+        current.classAverage - previous.classAverage
       );
 
       changes.push({
         from: previous.term,
         to: current.term,
-
         difference,
-
-        direction:
-          difference > 0
-            ? 'improved'
-            : difference < 0
-              ? 'declined'
-              : 'unchanged'
+        direction: difference > 0
+          ? 'improved'
+          : difference < 0
+            ? 'declined'
+            : 'unchanged'
       });
-
     } else {
-
       changes.push({
         from: previous.term,
         to: current.term,
-
         difference: null,
         direction: 'incomplete'
       });
@@ -396,68 +251,27 @@ function getTermComparisonInternal_(year, grade) {
 
 /* ========== INDIVIDUAL SUBJECT COMPARISON ========== */
 
-/**
- * Compare a single subject across all terms.
- *
- * Examples:
- *
- * getSubjectTermComparisonInternal_(
- *   2026,
- *   'Grade 06',
- *   'Maths'
- * )
- *
- * getSubjectTermComparisonInternal_(
- *   2026,
- *   'Grade 12',
- *   'Economics'
- * )
- *
- * Subject names are automatically obtained
- * from the selected grade's register.
- */
-function getSubjectTermComparisonInternal_(
-  year,
-  grade,
-  subject
-) {
+function getSubjectTermComparisonInternal_(year, grade, subject, preloadedContext) {
+  const comparison = getTermComparisonInternal_(year, grade, preloadedContext);
 
-  const comparison = getTermComparisonInternal_(
-    year,
-    grade
-  );
-
-  const subjectName = String(
-    subject || ''
-  ).trim();
-
+  const subjectName = String(subject || '').trim();
   if (!subjectName) {
-
-    throw new Error(
-      'Please select a subject.'
-    );
+    throw new Error('Please select a subject.');
   }
 
   const result = comparison.subjects.find(
-    item =>
-      item.subject === subjectName
+    item => item.subject === subjectName
   );
 
   if (!result) {
-
-    throw new Error(
-      'No enrolled students found for subject: ' +
-      subjectName
-    );
+    throw new Error('No enrolled students found for subject: ' + subjectName);
   }
 
   return {
     year: comparison.year,
     grade: comparison.grade,
     subject: subjectName,
-
     terms: result.terms,
-
     note:
       'ABSENT counts as entered and contributes zero ' +
       'to the subject average. ' +
@@ -469,130 +283,47 @@ function getSubjectTermComparisonInternal_(
 
 /* ========== TEST FUNCTIONS ========== */
 
-/**
- * Generic read-only term comparison test.
- *
- * Can be used with any configured grade.
- *
- * No spreadsheet data is modified.
- */
-function testTermComparisonForGrade__(
-  year,
-  grade
-) {
+function testTermComparisonForGrade_(year, grade) {
+  const result = getTermComparisonInternal_(year, grade);
 
-  const result = getTermComparisonInternal_(
-    year,
-    grade
-  );
-
-  Logger.log(
-    '===== TERM COMPARISON TEST ====='
-  );
-
-  Logger.log(
-    'Year: ' + result.year
-  );
-
-  Logger.log(
-    'Grade: ' + result.grade
-  );
-
-  Logger.log(
-    'Students: ' + result.studentCount
-  );
+  Logger.log('===== TERM COMPARISON TEST =====');
+  Logger.log('Year: ' + result.year);
+  Logger.log('Grade: ' + result.grade);
+  Logger.log('Students: ' + result.studentCount);
 
   for (const term of result.terms) {
-
     Logger.log(
       JSON.stringify({
         term: term.term,
-
-        classAverage:
-          term.classAverage,
-
-        entered:
-          term.entered,
-
-        expected:
-          term.expected,
-
-        numeric:
-          term.numeric,
-
-        absent:
-          term.absent,
-
-        missing:
-          term.missing,
-
-        completeStudents:
-          term.completeStudents,
-
-        completionPercentage:
-          term.completionPercentage
+        classAverage: term.classAverage,
+        entered: term.entered,
+        expected: term.expected,
+        numeric: term.numeric,
+        absent: term.absent,
+        missing: term.missing,
+        completeStudents: term.completeStudents,
+        completionPercentage: term.completionPercentage
       })
     );
   }
 
-  Logger.log(
-    'Subjects: ' +
-    result.subjects.length
-  );
-
-  Logger.log(
-    'Changes: ' +
-    JSON.stringify(
-      result.changes
-    )
-  );
-
-  Logger.log(
-    'Term comparison test completed for ' +
-    result.grade
-  );
+  Logger.log('Subjects: ' + result.subjects.length);
+  Logger.log('Changes: ' + JSON.stringify(result.changes));
+  Logger.log('Term comparison test completed for ' + result.grade);
 }
 
-/**
- * Original Grade 06 test.
- */
 function testTermComparison_() {
-
-  testTermComparisonForGrade_(
-    2026,
-    'Grade 06'
-  );
+  testTermComparisonForGrade_(2026, 'Grade 06');
 }
 
-/**
- * Grade 11 test.
- */
 function testTermComparisonGrade11_() {
-
-  testTermComparisonForGrade_(
-    2026,
-    'Grade 11'
-  );
+  testTermComparisonForGrade_(2026, 'Grade 11');
 }
 
-/**
- * Grade 12 test.
- */
 function testTermComparisonGrade12_() {
-
-  testTermComparisonForGrade_(
-    2026,
-    'Grade 12'
-  );
+  testTermComparisonForGrade_(2026, 'Grade 12');
 }
 
-/**
- * Grade 13 test.
- */
 function testTermComparisonGrade13_() {
-
-  testTermComparisonForGrade_(
-    2026,
-    'Grade 13'
-  );
+  testTermComparisonForGrade_(2026, 'Grade 13');
 }

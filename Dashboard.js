@@ -1,4 +1,3 @@
-
 /**
  * SCHOOL ACADEMIC MANAGEMENT SYSTEM
  * File 4 of 7: Dashboard.gs
@@ -42,7 +41,6 @@
  * Works for every configured grade.
  */
 function buildSubmissionStatus_(analysis) {
-
   if (
     !analysis ||
     !Array.isArray(analysis.subjects) ||
@@ -57,7 +55,6 @@ function buildSubmissionStatus_(analysis) {
 
   const subjects = analysis.subjects.map(
     subjectData => {
-
       const subject = subjectData.subject;
 
       // Students enrolled in this subject.
@@ -89,11 +86,8 @@ function buildSubmissionStatus_(analysis) {
         expected > 0 &&
         entered === expected
       ) {
-
         status = 'completed';
-
       } else if (entered > 0) {
-
         status = 'partial';
       }
 
@@ -246,40 +240,12 @@ function buildSubmissionStatus_(analysis) {
  * - Academic year
  * - Grade
  * - Term
- *
- * Examples:
- *
- * getSubmissionStatusInternal_(
- *   2026,
- *   'Grade 06',
- *   'Term 1'
- * )
- *
- * getSubmissionStatusInternal_(
- *   2026,
- *   'Grade 12',
- *   'Term 1'
- * )
- *
- * Subject status:
- *
- * pending:
- *   No results have been entered.
- *
- * partial:
- *   Some results have been entered.
- *
- * completed:
- *   Every enrolled student has a result.
- *
- * ABSENT counts as entered.
  */
 function getSubmissionStatusInternal_(
   year,
   grade,
   term
 ) {
-
   const context = validateContext_(
     year,
     grade,
@@ -304,30 +270,12 @@ function getSubmissionStatusInternal_(
  *
  * 1. Academic analysis
  * 2. Submission progress
- *
- * Called by Index.html:
- *
- * google.script.run
- *   .withSuccessHandler(...)
- *   .getDashboardDataInternal_(
- *     year,
- *     grade,
- *     term
- *   );
- *
- * Maintains the existing response format:
- *
- * {
- *   analysis: {...},
- *   submission: {...}
- * }
  */
 function getDashboardDataInternal_(
   year,
   grade,
   term
 ) {
-
   const context = validateContext_(
     year,
     grade,
@@ -367,12 +315,11 @@ function getDashboardDataInternal_(
  *
  * No marks are modified.
  */
-function testDashboardForGrade__(
+function testDashboardForGrade_(
   year,
   grade,
   term
 ) {
-
   const result = getDashboardDataInternal_(
     year,
     grade,
@@ -450,7 +397,6 @@ function testDashboardForGrade__(
  * Original Grade 06 test.
  */
 function testDashboard_() {
-
   testDashboardForGrade_(
     2026,
     'Grade 06',
@@ -462,7 +408,6 @@ function testDashboard_() {
  * Grade 11 test.
  */
 function testDashboardGrade11_() {
-
   testDashboardForGrade_(
     2026,
     'Grade 11',
@@ -474,7 +419,6 @@ function testDashboardGrade11_() {
  * Grade 12 test.
  */
 function testDashboardGrade12_() {
-
   testDashboardForGrade_(
     2026,
     'Grade 12',
@@ -486,7 +430,6 @@ function testDashboardGrade12_() {
  * Grade 13 test.
  */
 function testDashboardGrade13_() {
-
   testDashboardForGrade_(
     2026,
     'Grade 13',
